@@ -1,89 +1,123 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Shashka Online SSH</title>
+    <title>Shashka Online Pro</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background: #001f3f; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
-        #board { display: grid; grid-template-columns: repeat(8, 60px); border: 5px solid #00d4ff; opacity: 0.5; pointer-events: none; }
-        .active-board { opacity: 1 !important; pointer-events: auto !important; }
-        .cell { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; }
+        body { background: #001f3f; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #board { display: grid; grid-template-columns: repeat(8, 60px); border: 5px solid #00d4ff; opacity: 0.3; pointer-events: none; }
+        .active { opacity: 1 !important; pointer-events: auto !important; }
+        .cell { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; position: relative; }
         .black { background: #4d2600; } .white { background: #ffcc99; }
-        .piece { width: 50px; height: 50px; border-radius: 50%; border: 2px solid white; cursor: pointer; }
-        .red { background: #d32f2f; } .light { background: #f5f5f5; }
-        .status-bar { background: #002b5c; padding: 15px; margin: 10px; border-radius: 8px; border: 1px solid #00d4ff; width: 480px; text-align: center; }
+        .piece { width: 50px; height: 50px; border-radius: 50%; border: 2px solid white; cursor: pointer; transition: 0.2s; }
+        .red { background: #d32f2f; } .light { background: #f5f5f5; border: 2px solid #333; }
+        .selected { outline: 4px solid yellow; transform: scale(1.1); z-index: 10; }
+        .info-panel { background: #002b5c; padding: 15px; margin: 15px; border-radius: 10px; border: 1px solid #00d4ff; text-align: center; min-width: 300px; }
+        #login-box { margin-top: 50px; background: #002b5c; padding: 30px; border-radius: 15px; border: 2px solid #00d4ff; }
+        input { padding: 10px; border-radius: 5px; border: none; font-size: 16px; margin-right: 10px; }
+        button { padding: 10px 20px; background: #00d4ff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="login-screen">
-        <h2>SHASHKA ONLINE</h2>
-        <input type="text" id="roomId" placeholder="Xona ID">
-        <button onclick="enterGame()">Kirish</button>
+
+    <div id="login-box">
+        <h2>SHASHKA SSH ONLINE</h2>
+        <input type="text" id="rid" placeholder="Xona ID (masalan: 777)">
+        <button onclick="joinGame()">KIRISH</button>
     </div>
 
-    <div id="game-screen" style="display:none;">
-        <div class="status-bar" id="status-msg">Raqib kutilmoqda...</div>
+    <div id="game-ui" style="display:none;">
+        <div class="info-panel">
+            <h3 id="status-text">Raqib kutilmoqda...</h3>
+            <p>Xona: <b id="room-display"></b></p>
+        </div>
         <div id="board"></div>
     </div>
 
     <script>
         const socket = io();
-        let currentRoom, gameActive = false;
-        let gameState = Array(8).fill().map(() => Array(8).fill(null));
+        let myRoom, gameActive = false;
+        let selected = null;
+        let boardState = Array(8).fill().map(() => Array(8).fill(null));
 
-        function enterGame() {
-            currentRoom = document.getElementById('roomId').value;
-            if(!currentRoom) return alert("ID yozing!");
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
-            
-            socket.emit('join-room', currentRoom);
-            initBoard();
+        function joinGame() {
+            myRoom = document.getElementById('rid').value;
+            if(!myRoom) return alert("ID yozing!");
+            document.getElementById('login-box').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            document.getElementById('room-display').innerText = myRoom;
+            socket.emit('join-room', myRoom);
+            setupBoard();
         }
 
-        socket.on('update-status', (data) => {
-            document.getElementById('status-msg').innerText = data.message;
-            if(data.count === 2) {
+        socket.on('status-update', (data) => {
+            document.getElementById('status-text').innerText = data.msg;
+            if(data.count >= 2) {
                 gameActive = true;
-                document.getElementById('board').classList.add('active-board');
+                document.getElementById('board').classList.add('active');
             }
         });
 
-        function initBoard() {
+        function setupBoard() {
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
                     if((r+c)%2 !== 0) {
-                        if(r < 3) gameState[r][c] = 'light';
-                        if(r > 4) gameState[r][c] = 'red';
+                        if(r < 3) boardState[r][c] = 'light';
+                        if(r > 4) boardState[r][c] = 'red';
                     }
                 }
             }
-            render();
+            draw();
         }
 
-        function render() {
-            const b = document.getElementById('board'); b.innerHTML = '';
+        function draw() {
+            const b = document.getElementById('board');
+            b.innerHTML = '';
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
                     const cell = document.createElement('div');
                     cell.className = `cell ${(r+c)%2!==0 ? 'black' : 'white'}`;
-                    if(gameState[r][c]) {
+                    
+                    if(boardState[r][c]) {
                         const p = document.createElement('div');
-                        p.className = `piece ${gameState[r][c]}`;
+                        p.className = `piece ${boardState[r][c]}`;
+                        if(selected && selected.r === r && selected.c === c) p.classList.add('selected');
+                        
+                        p.onclick = (e) => {
+                            e.stopPropagation();
+                            if(!gameActive) return;
+                            selected = {r, c, type: boardState[r][c]};
+                            draw();
+                        };
                         cell.appendChild(p);
                     }
+
                     cell.onclick = () => {
-                        if(!gameActive) return; // Sherigi kelmaguncha ishlamaydi
-                        gameState[r][c] = 'red'; 
-                        socket.emit('move', { roomId: currentRoom, move: {r, c, type:'red'} });
-                        render();
+                        if(selected && !boardState[r][c] && (r+c)%2 !== 0) {
+                            // Toshni yangi joyga ko'chirish
+                            boardState[selected.r][selected.c] = null;
+                            boardState[r][c] = selected.type;
+                            
+                            // Serverga yuborish
+                            socket.emit('move', {
+                                roomId: myRoom,
+                                move: { from: {r: selected.r, c: selected.c}, to: {r, c}, type: selected.type }
+                            });
+                            
+                            selected = null;
+                            draw();
+                        }
                     };
                     b.appendChild(cell);
                 }
             }
         }
 
-        socket.on('move-received', (m) => { gameState[m.r][m.c] = m.type; render(); });
+        socket.on('move-received', (m) => {
+            boardState[m.from.r][m.from.c] = null;
+            boardState[m.to.r][m.to.c] = m.type;
+            draw();
+        });
     </script>
 </body>
 </html>
