@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shashka Online SSH</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background: #001f3f; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        #board { display: grid; grid-template-columns: repeat(8, 60px); border: 5px solid #00d4ff; opacity: 0.5; pointer-events: none; }
+        .active-board { opacity: 1 !important; pointer-events: auto !important; }
+        .cell { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; }
+        .black { background: #4d2600; } .white { background: #ffcc99; }
+        .piece { width: 50px; height: 50px; border-radius: 50%; border: 2px solid white; cursor: pointer; }
+        .red { background: #d32f2f; } .light { background: #f5f5f5; }
+        .status-bar { background: #002b5c; padding: 15px; margin: 10px; border-radius: 8px; border: 1px solid #00d4ff; width: 480px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <h2>SHASHKA ONLINE</h2>
+        <input type="text" id="roomId" placeholder="Xona ID">
+        <button onclick="enterGame()">Kirish</button>
+    </div>
+
+    <div id="game-screen" style="display:none;">
+        <div class="status-bar" id="status-msg">Raqib kutilmoqda...</div>
+        <div id="board"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentRoom, gameActive = false;
+        let gameState = Array(8).fill().map(() => Array(8).fill(null));
+
+        function enterGame() {
+            currentRoom = document.getElementById('roomId').value;
+            if(!currentRoom) return alert("ID yozing!");
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            
+            socket.emit('join-room', currentRoom);
+            initBoard();
+        }
+
+        socket.on('update-status', (data) => {
+            document.getElementById('status-msg').innerText = data.message;
+            if(data.count === 2) {
+                gameActive = true;
+                document.getElementById('board').classList.add('active-board');
+            }
+        });
+
+        function initBoard() {
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if((r+c)%2 !== 0) {
+                        if(r < 3) gameState[r][c] = 'light';
+                        if(r > 4) gameState[r][c] = 'red';
+                    }
+                }
+            }
+            render();
+        }
+
+        function render() {
+            const b = document.getElementById('board'); b.innerHTML = '';
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${(r+c)%2!==0 ? 'black' : 'white'}`;
+                    if(gameState[r][c]) {
+                        const p = document.createElement('div');
+                        p.className = `piece ${gameState[r][c]}`;
+                        cell.appendChild(p);
+                    }
+                    cell.onclick = () => {
+                        if(!gameActive) return; // Sherigi kelmaguncha ishlamaydi
+                        gameState[r][c] = 'red'; 
+                        socket.emit('move', { roomId: currentRoom, move: {r, c, type:'red'} });
+                        render();
+                    };
+                    b.appendChild(cell);
+                }
+            }
+        }
+
+        socket.on('move-received', (m) => { gameState[m.r][m.c] = m.type; render(); });
+    </script>
+</body>
+</html>
