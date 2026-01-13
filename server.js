@@ -1,28 +1,27 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
 app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
     socket.on('join-room', (roomId) => {
         socket.join(roomId);
-        const room = io.sockets.adapter.rooms.get(roomId);
-        const playersCount = room ? room.size : 0;
-
-        // Xonadagi hamma (ikkala o'yinchi)ga xabar yuboramiz
-        io.to(roomId).emit('update-status', {
-            count: playersCount,
-            message: playersCount === 2 ? "Raqib ulandi! O'yinni boshlang." : "Raqib kutilmoqda..."
+        const numClients = io.sockets.adapter.rooms.get(roomId)?.size || 0;
+        
+        // Ikkala o'yinchiga darhol boshlash xabarini yuborish
+        io.to(roomId).emit('status-update', {
+            msg: numClients >= 2 ? "O'yin boshlandi!" : "Raqib kutilmoqda...",
+            active: numClients >= 2
         });
     });
 
     socket.on('move', (data) => {
+        // Yurishni faqat raqibga yuboramiz
         socket.to(data.roomId).emit('move-received', data.move);
     });
 });
 
-server.listen(3000, () => console.log("Server running on port 3000"));
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => console.log('Server running'));
