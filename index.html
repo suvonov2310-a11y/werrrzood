@@ -2,31 +2,32 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shashka Online Pro</title>
+    <title>Shashka Professional</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: manipulation; }
-        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 4px solid #2ec4b6; margin-top: 10px; }
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: manipulation; }
+        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 4px solid #ff9f1c; margin-top: 10px; }
         .cell { width: 11vw; height: 11vw; display: flex; align-items: center; justify-content: center; }
-        .black { background: #4e342e; } .white { background: #d7ccc8; }
-        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; }
+        .black { background: #3d2b1f; } .white { background: #d7ccc8; }
+        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         .red { background: #e71d36; box-shadow: inset 0 0 10px #000; }
-        .light { background: #fdfdfd; box-shadow: inset 0 0 10px #888; border: 1px solid #333; }
+        .light { background: #fdfffc; box-shadow: inset 0 0 10px #888; border: 1px solid #333; }
         .selected { outline: 4px solid #ffeb3b; transform: scale(1.1); }
-        #status { margin-top: 20px; padding: 10px; background: #2ec4b6; width: 85vw; text-align: center; border-radius: 5px; font-weight: bold; }
+        .damka { border: 3px solid gold; box-shadow: 0 0 15px gold; }
+        #status { margin-top: 15px; padding: 10px; background: #ff9f1c; width: 85vw; text-align: center; border-radius: 5px; font-weight: bold; color: #000; }
         #login { margin-top: 50px; text-align: center; }
-        input { padding: 12px; border-radius: 5px; border: none; width: 60vw; margin-bottom: 10px; }
-        button { padding: 12px 25px; background: #2ec4b6; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        button { padding: 12px 25px; background: #ff9f1c; border: none; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        input { padding: 12px; border-radius: 5px; border: none; margin-bottom: 10px; width: 60vw; }
     </style>
 </head>
 <body>
     <div id="login">
-        <h2>SHASHKA ONLINE</h2>
+        <h2>SHASHKA PRO</h2>
         <input type="text" id="rid" placeholder="Xona ID"> <br>
-        <button onclick="join()">KIRISH</button>
+        <button onclick="join()">BOSHLASH</button>
     </div>
     <div id="game" style="display:none;">
-        <div id="status">Raqib kutilmoqda...</div>
+        <div id="status">Kutilmoqda...</div>
         <div id="board"></div>
     </div>
 
@@ -47,15 +48,21 @@
         socket.on('status-update', (data) => {
             gameActive = data.active;
             if (myColor === null) myColor = data.count === 1 ? 'red' : 'light';
-            document.getElementById('status').innerText = data.active ? (turn === myColor ? "Sizning navbatingiz!" : "Raqib navbati...") : data.msg;
+            updateStatus();
         });
+
+        function updateStatus() {
+            const statusBox = document.getElementById('status');
+            if(!gameActive) statusBox.innerText = "Raqib kutilmoqda...";
+            else statusBox.innerText = (turn === myColor) ? "SIZNING NAVBATINGIZ (Urish majburiy!)" : "RAQIB NAVBATI...";
+        }
 
         function initBoard() {
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
                     if((r+c)%2 !== 0) {
-                        if(r < 3) board[r][c] = 'light';
-                        else if(r > 4) board[r][c] = 'red';
+                        if(r < 3) board[r][c] = { color: 'light', isDamka: false };
+                        else if(r > 4) board[r][c] = { color: 'red', isDamka: false };
                     }
                 }
             }
@@ -69,18 +76,20 @@
                 for(let c=0; c<8; c++) {
                     const cell = document.createElement('div');
                     cell.className = `cell ${(r+c)%2!==0 ? 'black' : 'white'}`;
-                    if(board[r][c]) {
-                        const p = document.createElement('div');
-                        p.className = `piece ${board[r][c]}`;
-                        if(selected && selected.r === r && selected.c === c) p.classList.add('selected');
-                        p.onpointerdown = () => {
-                            if(gameActive && turn === myColor && board[r][c] === myColor) {
-                                selected = {r, c, type: board[r][c]};
+                    const p = board[r][c];
+                    if(p) {
+                        const div = document.createElement('div');
+                        div.className = `piece ${p.color} ${p.isDamka ? 'damka' : ''}`;
+                        if(p.isDamka) div.innerHTML = '👑';
+                        if(selected && selected.r === r && selected.c === c) div.classList.add('selected');
+                        div.onpointerdown = () => {
+                            if(gameActive && turn === myColor && p.color === myColor) {
+                                selected = {r, c, ...p};
                                 render();
                             }
                         };
-                        cell.appendChild(p);
-                    } else if(selected && (r+c)%2 !== 0) {
+                        cell.appendChild(div);
+                    } else if(selected) {
                         cell.onpointerdown = () => validateMove(r, c);
                     }
                     bDiv.appendChild(cell);
@@ -88,37 +97,105 @@
             }
         }
 
-        function validateMove(r, c) {
-            const rDiff = r - selected.r;
-            const cDiff = Math.abs(c - selected.c);
-            const isForward = (selected.type === 'red' && rDiff < 0) || (selected.type === 'light' && rDiff > 0);
-
-            if(Math.abs(rDiff) === 1 && cDiff === 1 && isForward) {
-                doMove(r, c);
-            } else if(Math.abs(rDiff) === 2 && cDiff === 2) {
-                const mR = (r + selected.r) / 2, mC = (c + selected.c) / 2;
-                if(board[mR][mC] && board[mR][mC] !== selected.type) {
-                    board[mR][mC] = null;
-                    doMove(r, c);
+        // MAJBURIY URISH TEKSHIRUVI
+        function getRequiredJumps() {
+            let jumps = [];
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(board[r][c] && board[r][c].color === myColor) {
+                        let available = getJumpsForPiece(r, c);
+                        if(available.length > 0) jumps.push({r, c, moves: available});
+                    }
                 }
+            }
+            return jumps;
+        }
+
+        function getJumpsForPiece(r, c) {
+            let jumps = [];
+            const p = board[r][c];
+            const dirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
+            
+            for(let [dr, dc] of dirs) {
+                if(p.isDamka) {
+                    // Damka uchun uzoq masofali urish
+                    for(let i=1; i<8; i++) {
+                        let mR = r + dr*i, mC = c + dc*i;
+                        let eR = r + dr*(i+1), eC = c + dc*(i+1);
+                        if(eR<0 || eR>=8 || eC<0 || eC>=8) break;
+                        if(board[mR][mC]) {
+                            if(board[mR][mC].color !== p.color && !board[eR][eC]) {
+                                jumps.push({toR: eR, toC: eC, victimR: mR, victimC: mC});
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    // Oddiy tosh uchun urish
+                    let mR = r + dr, mC = c + dc;
+                    let eR = r + dr*2, eC = c + dc*2;
+                    if(eR>=0 && eR<8 && eC>=0 && eC<8) {
+                        if(board[mR][mC] && board[mR][mC].color !== p.color && !board[eR][eC]) {
+                            jumps.push({toR: eR, toC: eC, victimR: mR, victimC: mC});
+                        }
+                    }
+                }
+            }
+            return jumps;
+        }
+
+        function validateMove(r, c) {
+            const required = getRequiredJumps();
+            const pieceJumps = getJumpsForPiece(selected.r, selected.c);
+            
+            // Agar urish majburiy bo'lsa va bu tosh urolmasa yoki noto'g'ri katakka borsa
+            if(required.length > 0) {
+                const jump = pieceJumps.find(j => j.toR === r && j.toC === c);
+                if(jump) {
+                    board[jump.victimR][jump.victimC] = null;
+                    executeMove(r, c, true);
+                }
+                return;
+            }
+
+            // Oddiy yurish (faqat urish majburiyati bo'lmasa)
+            const rDiff = r - selected.r, cDiff = Math.abs(c - selected.c);
+            if(selected.isDamka) {
+                if(Math.abs(rDiff) === Math.abs(cDiff)) executeMove(r, c, false);
+            } else {
+                const forward = (selected.color === 'red' ? -1 : 1);
+                if(rDiff === forward && cDiff === 1) executeMove(r, c, false);
             }
         }
 
-        function doMove(r, c) {
-            socket.emit('move', { roomId: myRoom, move: { from: {r: selected.r, c: selected.c}, to: {r, c}, type: selected.type } });
+        function executeMove(r, c, jumped) {
+            let isDamkaNow = selected.isDamka || (selected.color === 'red' && r === 0) || (selected.color === 'light' && r === 7);
+            socket.emit('move', { roomId: myRoom, move: { from: {r: selected.r, c: selected.c}, to: {r, c}, color: selected.color, isDamka: isDamkaNow, jumped } });
+            
             board[selected.r][selected.c] = null;
-            board[r][c] = selected.type;
-            selected = null;
-            turn = (turn === 'red') ? 'light' : 'red';
+            board[r][c] = { color: selected.color, isDamka: isDamkaNow };
+            
+            // Zanjirli urish (N-ta urish)
+            if(jumped && getJumpsForPiece(r, c).length > 0) {
+                selected = {r, c, color: selected.color, isDamka: isDamkaNow};
+            } else {
+                selected = null;
+                turn = (turn === 'red') ? 'light' : 'red';
+            }
             render();
+            updateStatus();
         }
 
         socket.on('move-received', (m) => {
+            if(m.jumped) {
+                // Urilgan toshni topish va o'chirish (o'rta nuqta)
+                board[(m.from.r + m.to.r)/2][(m.from.c + m.to.c)/2] = null; 
+            }
             board[m.from.r][m.from.c] = null;
-            board[m.to.r][m.to.c] = m.type;
-            if(Math.abs(m.from.r - m.to.r) === 2) board[(m.from.r + m.to.r)/2][(m.from.c + m.to.c)/2] = null;
+            board[m.to.r][m.to.c] = { color: m.color, isDamka: m.isDamka };
             turn = (turn === 'red') ? 'light' : 'red';
             render();
+            updateStatus();
         });
     </script>
 </body>
