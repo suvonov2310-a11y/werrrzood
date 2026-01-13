@@ -1,7 +1,6 @@
 {
-    "name": "shashka-online",
+    "name": "shashka-pro-chat",
     "version": "1.0.0",
-    "description": "Online shashka o'yini",
     "main": "server.js",
     "scripts": {
       "start": "node server.js"

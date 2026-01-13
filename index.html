@@ -2,33 +2,48 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shashka Professional</title>
+    <title>Shashka Pro + Chat</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: manipulation; }
-        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 4px solid #ff9f1c; margin-top: 10px; }
-        .cell { width: 11vw; height: 11vw; display: flex; align-items: center; justify-content: center; }
-        .black { background: #3d2b1f; } .white { background: #d7ccc8; }
-        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .red { background: #e71d36; box-shadow: inset 0 0 10px #000; }
-        .light { background: #fdfffc; box-shadow: inset 0 0 10px #888; border: 1px solid #333; }
-        .selected { outline: 4px solid #ffeb3b; transform: scale(1.1); }
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; overflow-x: hidden; }
+        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 3px solid #fca311; margin-top: 10px; }
+        .cell { width: 11vw; height: 11vw; display: flex; align-items: center; justify-content: center; position: relative; }
+        .black { background: #1a1a1a; } .white { background: #e0e0e0; }
+        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 2; }
+        .red { background: #d00000; box-shadow: inset 0 0 10px #000; }
+        .light { background: #ffffff; color: black; box-shadow: inset 0 0 10px #999; border: 1px solid #333; }
+        .selected { outline: 3px solid #fca311; transform: scale(1.1); }
         .damka { border: 3px solid gold; box-shadow: 0 0 15px gold; }
-        #status { margin-top: 15px; padding: 10px; background: #ff9f1c; width: 85vw; text-align: center; border-radius: 5px; font-weight: bold; color: #000; }
-        #login { margin-top: 50px; text-align: center; }
-        button { padding: 12px 25px; background: #ff9f1c; border: none; font-weight: bold; border-radius: 5px; cursor: pointer; }
-        input { padding: 12px; border-radius: 5px; border: none; margin-bottom: 10px; width: 60vw; }
+        #status { margin-top: 10px; padding: 10px; background: #fca311; width: 85vw; text-align: center; border-radius: 5px; color: #000; font-weight: bold; }
+        #chat-area { width: 88vw; height: 120px; background: #222; margin-top: 10px; border-radius: 5px; display: flex; flex-direction: column; }
+        #messages { flex: 1; overflow-y: auto; padding: 5px; font-size: 13px; display: flex; flex-direction: column; }
+        .msg { margin: 2px; padding: 5px 8px; border-radius: 5px; max-width: 70%; word-wrap: break-word; }
+        .me { background: #fca311; color: black; align-self: flex-end; }
+        .them { background: #444; color: white; align-self: flex-start; }
+        #chat-input-row { display: flex; border-top: 1px solid #444; }
+        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 8px; outline: none; }
+        #send-btn { background: #fca311; border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; }
+        #login { margin-top: 100px; text-align: center; }
+        input[type="text"] { padding: 12px; border-radius: 5px; border: none; width: 60vw; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div id="login">
-        <h2>SHASHKA PRO</h2>
-        <input type="text" id="rid" placeholder="Xona ID"> <br>
-        <button onclick="join()">BOSHLASH</button>
+        <h2 style="color:#fca311">SHASHKA PRO ONLINE</h2>
+        <input type="text" id="rid" placeholder="Xona ID (masalan: 555)"> <br>
+        <button onclick="join()" style="padding:12px 25px; background:#fca311; border:none; border-radius:5px; font-weight:bold;">KIRISH</button>
     </div>
+
     <div id="game" style="display:none;">
-        <div id="status">Kutilmoqda...</div>
+        <div id="status">Raqib kutilmoqda...</div>
         <div id="board"></div>
+        <div id="chat-area">
+            <div id="messages"></div>
+            <div id="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Xabar..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button id="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -47,14 +62,14 @@
 
         socket.on('status-update', (data) => {
             gameActive = data.active;
-            if (myColor === null) myColor = data.count === 1 ? 'red' : 'light';
+            if (myColor === null) myColor = (data.count === 1) ? 'red' : 'light';
             updateStatus();
         });
 
         function updateStatus() {
-            const statusBox = document.getElementById('status');
-            if(!gameActive) statusBox.innerText = "Raqib kutilmoqda...";
-            else statusBox.innerText = (turn === myColor) ? "SIZNING NAVBATINGIZ (Urish majburiy!)" : "RAQIB NAVBATI...";
+            const s = document.getElementById('status');
+            if(!gameActive) s.innerText = "Raqib kutilmoqda...";
+            else s.innerText = (turn === myColor) ? "SIZNING NAVBATINGIZ" : "RAQIB NAVBATI...";
         }
 
         function initBoard() {
@@ -72,6 +87,7 @@
         function render() {
             const bDiv = document.getElementById('board');
             bDiv.innerHTML = '';
+            updateStatus();
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
                     const cell = document.createElement('div');
@@ -97,47 +113,26 @@
             }
         }
 
-        // MAJBURIY URISH TEKSHIRUVI
-        function getRequiredJumps() {
-            let jumps = [];
+        function hasMustJump() {
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
                     if(board[r][c] && board[r][c].color === myColor) {
-                        let available = getJumpsForPiece(r, c);
-                        if(available.length > 0) jumps.push({r, c, moves: available});
+                        if(getJumpsForPiece(r, c).length > 0) return true;
                     }
                 }
             }
-            return jumps;
+            return false;
         }
 
         function getJumpsForPiece(r, c) {
             let jumps = [];
             const p = board[r][c];
             const dirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
-            
             for(let [dr, dc] of dirs) {
-                if(p.isDamka) {
-                    // Damka uchun uzoq masofali urish
-                    for(let i=1; i<8; i++) {
-                        let mR = r + dr*i, mC = c + dc*i;
-                        let eR = r + dr*(i+1), eC = c + dc*(i+1);
-                        if(eR<0 || eR>=8 || eC<0 || eC>=8) break;
-                        if(board[mR][mC]) {
-                            if(board[mR][mC].color !== p.color && !board[eR][eC]) {
-                                jumps.push({toR: eR, toC: eC, victimR: mR, victimC: mC});
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    // Oddiy tosh uchun urish
-                    let mR = r + dr, mC = c + dc;
-                    let eR = r + dr*2, eC = c + dc*2;
-                    if(eR>=0 && eR<8 && eC>=0 && eC<8) {
-                        if(board[mR][mC] && board[mR][mC].color !== p.color && !board[eR][eC]) {
-                            jumps.push({toR: eR, toC: eC, victimR: mR, victimC: mC});
-                        }
+                let mR = r+dr, mC = c+dc, eR = r+dr*2, eC = c+dc*2;
+                if(eR>=0 && eR<8 && eC>=0 && eC<8) {
+                    if(board[mR][mC] && board[mR][mC].color !== p.color && !board[eR][eC]) {
+                        jumps.push({toR: eR, toC: eC, vR: mR, vC: mC});
                     }
                 }
             }
@@ -145,58 +140,64 @@
         }
 
         function validateMove(r, c) {
-            const required = getRequiredJumps();
-            const pieceJumps = getJumpsForPiece(selected.r, selected.c);
+            const jumps = getJumpsForPiece(selected.r, selected.c);
+            const mustJump = hasMustJump();
             
-            // Agar urish majburiy bo'lsa va bu tosh urolmasa yoki noto'g'ri katakka borsa
-            if(required.length > 0) {
-                const jump = pieceJumps.find(j => j.toR === r && j.toC === c);
-                if(jump) {
-                    board[jump.victimR][jump.victimC] = null;
-                    executeMove(r, c, true);
-                }
+            const jump = jumps.find(j => j.toR === r && j.toC === c);
+            if(jump) {
+                board[jump.vR][jump.vC] = null;
+                applyMove(r, c, true);
                 return;
             }
 
-            // Oddiy yurish (faqat urish majburiyati bo'lmasa)
-            const rDiff = r - selected.r, cDiff = Math.abs(c - selected.c);
-            if(selected.isDamka) {
-                if(Math.abs(rDiff) === Math.abs(cDiff)) executeMove(r, c, false);
-            } else {
+            if(!mustJump) {
+                const rDiff = r - selected.r, cDiff = Math.abs(c - selected.c);
                 const forward = (selected.color === 'red' ? -1 : 1);
-                if(rDiff === forward && cDiff === 1) executeMove(r, c, false);
+                if((selected.isDamka || rDiff === forward) && cDiff === 1) {
+                    applyMove(r, c, false);
+                }
             }
         }
 
-        function executeMove(r, c, jumped) {
-            let isDamkaNow = selected.isDamka || (selected.color === 'red' && r === 0) || (selected.color === 'light' && r === 7);
-            socket.emit('move', { roomId: myRoom, move: { from: {r: selected.r, c: selected.c}, to: {r, c}, color: selected.color, isDamka: isDamkaNow, jumped } });
-            
+        function applyMove(r, c, isJump) {
+            let damka = selected.isDamka || (selected.color==='red'&&r===0) || (selected.color==='light'&&r===7);
+            socket.emit('move', { roomId: myRoom, move: { from:{r:selected.r, c:selected.c}, to:{r, c}, color:selected.color, isDamka:damka, jumped:isJump } });
             board[selected.r][selected.c] = null;
-            board[r][c] = { color: selected.color, isDamka: isDamkaNow };
-            
-            // Zanjirli urish (N-ta urish)
-            if(jumped && getJumpsForPiece(r, c).length > 0) {
-                selected = {r, c, color: selected.color, isDamka: isDamkaNow};
+            board[r][c] = { color:selected.color, isDamka:damka };
+            if(isJump && getJumpsForPiece(r, c).length > 0) {
+                selected = {r, c, color:selected.color, isDamka:damka};
             } else {
-                selected = null;
-                turn = (turn === 'red') ? 'light' : 'red';
+                selected = null; turn = (turn === 'red') ? 'light' : 'red';
             }
             render();
-            updateStatus();
         }
 
         socket.on('move-received', (m) => {
-            if(m.jumped) {
-                // Urilgan toshni topish va o'chirish (o'rta nuqta)
-                board[(m.from.r + m.to.r)/2][(m.from.c + m.to.c)/2] = null; 
-            }
+            if(m.jumped) board[(m.from.r+m.to.r)/2][(m.from.c+m.to.c)/2] = null;
             board[m.from.r][m.from.c] = null;
-            board[m.to.r][m.to.c] = { color: m.color, isDamka: m.isDamka };
+            board[m.to.r][m.to.c] = { color:m.color, isDamka:m.isDamka };
             turn = (turn === 'red') ? 'light' : 'red';
             render();
-            updateStatus();
         });
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            if(!input.value.trim()) return;
+            socket.emit('chat-message', { roomId: myRoom, text: input.value, sender: myColor });
+            addMsg(input.value, 'me');
+            input.value = '';
+        }
+
+        socket.on('chat-received', (data) => addMsg(data.text, 'them'));
+
+        function addMsg(text, side) {
+            const div = document.getElementById('messages');
+            const m = document.createElement('div');
+            m.className = `msg ${side}`;
+            m.innerText = text;
+            div.appendChild(m);
+            div.scrollTop = div.scrollHeight;
+        }
     </script>
 </body>
 </html>

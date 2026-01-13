@@ -10,17 +10,23 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         const clients = io.sockets.adapter.rooms.get(roomId);
         const num = clients ? clients.size : 0;
+        
+        // Har bir o'yinchiga o'zining tartib raqamini (count) yuboramiz
         io.to(roomId).emit('status-update', {
-            msg: num >= 2 ? "O'yin boshlandi!" : "Raqib kutilmoqda...",
             active: num >= 2,
-            count: num
+            count: num,
+            msg: num >= 2 ? "O'yin boshlandi!" : "Raqib kutilmoqda..."
         });
     });
 
     socket.on('move', (data) => {
-        // Yurishni boshqa o'yinchiga yuborish
         socket.to(data.roomId).emit('move-received', data.move);
+    });
+
+    socket.on('chat-message', (data) => {
+        socket.to(data.roomId).emit('chat-received', data);
     });
 });
 
-http.listen(process.env.PORT || 3000, () => console.log('Ready'));
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => console.log('Server running on port ' + PORT));
