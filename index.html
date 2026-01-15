@@ -7,121 +7,139 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    
     <style>
         :root { --purple: #6c5ce7; --pink: #fd79a8; --dark: #1a1a2e; }
-        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* LOBBY DIZAYNI (Siz yuborgan rasmdagidek) */
-        #lobby { padding: 15px; display: block; }
-        .header-card { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20px; }
-        .btn { background: white; color: var(--purple); border: none; padding: 15px; border-radius: 12px; width: 100%; margin: 8px 0; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        /* LOBBY */
+        #lobby { padding: 15px; }
+        .header-card { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .btn { background: white; color: var(--purple); border: none; padding: 12px; border-radius: 10px; width: 100%; margin: 5px 0; font-weight: bold; cursor: pointer; }
         .btn-pink { background: var(--pink); color: white; }
-        .btn:active { transform: scale(0.98); }
+        
+        .online-list { background: #fff; color: #333; border-radius: 20px; padding: 15px; min-height: 250px; }
+        .player-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; align-items: center; }
+        .invite-btn { background: var(--purple); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
 
-        .online-list { background: #fff; color: #333; border-radius: 20px; padding: 20px; min-height: 300px; }
-        .player-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; align-items: center; }
-        .player-name { font-weight: bold; color: var(--dark); }
-        .player-score { font-size: 12px; color: #666; }
-        .invite-btn { background: var(--purple); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+        /* MODAL (Taklif oynasi) */
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; text-align: center; width: 80%; }
 
-        /* O'YIN DOSKASI DIZAYNI */
-        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 20px; }
-        #status-bar { background: var(--purple); width: 90%; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; font-weight: bold; }
-        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 5px solid var(--purple); background: #fff; }
-        .cell { width: 11vw; height: 11vw; display: flex; align-items: center; justify-content: center; }
+        /* BOARD */
+        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 10px; }
+        #board { display: grid; grid-template-columns: repeat(8, 11.5vw); grid-template-rows: repeat(8, 11.5vw); border: 4px solid var(--purple); background: #fff; }
+        .cell { width: 11.5vw; height: 11.5vw; display: flex; align-items: center; justify-content: center; }
         .black { background: #333; }
         .white { background: #f0f0f0; }
-        
-        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; position: relative; transition: 0.2s; }
-        .red { background: #d63031; box-shadow: inset 0 0 10px #000; }
-        .light { background: #f1f2f6; box-shadow: inset 0 0 10px #999; }
-        .damka { border: 3px solid gold; box-shadow: 0 0 15px gold !important; }
-        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; }
-        .selected { outline: 4px solid #00ff00; transform: scale(1.1); z-index: 10; }
+        .piece { width: 9.5vw; height: 9.5vw; border-radius: 50%; position: relative; }
+        .red { background: #d63031; }
+        .light { background: #f1f2f6; }
+        .selected { outline: 3px solid #00ff00; }
     </style>
 </head>
 <body>
 
     <div id="lobby">
         <div class="header-card">
-            <h1 style="margin:0 0 15px 0">Shashka Online</h1>
-            <button class="btn">🔍 O'yin Topish</button>
-            <button class="btn">👥 Do'stni taklif qilish</button>
-            <button class="btn btn-pink" onclick="startRandomGame()">🎲 Tasodifiy o'yin</button>
+            <h2>Shashka Online</h2>
+            <button class="btn btn-pink" onclick="findRandom()">🎲 Tasodifiy Raqib</button>
+            <button class="btn" onclick="startBotGame()">🤖 Bot bilan o'ynash</button>
         </div>
-
         <div class="online-list">
-            <h3 style="margin:0 0 15px 0; color:var(--purple)">Online o'yinchilar</h3>
-            <div id="player-container">
-                <p>O'yinchilar qidirilmoqda...</p>
-            </div>
+            <h3 style="color:var(--purple); margin:0 0 10px 0">Onlayn o'yinchilar</h3>
+            <div id="player-container">Qidirilmoqda...</div>
         </div>
+    </div>
+
+    <div id="modal">
+        <p id="modal-text"></p>
+        <button class="invite-btn" id="accept-btn">Qabul qilish</button>
+        <button class="invite-btn" style="background:#666" onclick="closeModal()">Rad etish</button>
     </div>
 
     <div id="game-screen">
-        <div id="status-bar">Navbat: Qizillar</div>
+        <div id="status-bar" style="background:var(--purple); padding:10px; width:90%; border-radius:10px; text-align:center; margin-bottom:10px">Navbat: Qizillar</div>
         <div id="board"></div>
-        <button class="btn btn-pink" style="width:50%; margin-top:20px;" onclick="location.reload()">Chiqish</button>
+        <button class="btn" style="width:50%; margin-top:10px" onclick="location.reload()">Chiqish</button>
     </div>
 
     <script>
-        // 1. FIREBASE CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyD_AaQCbi4ipNXkzqRwq9BxQirC1rp-yC0",
-            authDomain: "shashka-online.firebaseapp.com",
-            projectId: "shashka-online",
-            storageBucket: "shashka-online.firebasestorage.app",
-            messagingSenderId: "1097808487424",
-            appId: "1:1097808487424:web:02d79c42b15a09c93724e5"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
         const socket = io();
-
-        // 2. O'YIN O'ZGARUVCHILARI
         let myId = "id_" + Math.random().toString(16).slice(2);
         let myName = "Buxorolik_" + Math.floor(Math.random() * 9000 + 1000);
+        let myColor = null;
+        let currentRoom = null;
         let board = [];
-        let selected = null;
         let turn = 'red';
-        let myColor = 'red';
+        let isBotGame = false;
 
-        // 3. ONLINE RO'YXATNI BOSHQARISH
-        socket.emit('join-lobby', { id: myId, name: myName, points: 1000 });
+        socket.emit('join-lobby', { id: myId, name: myName });
 
+        // 1. ONLAYN RO'YXAT VA TAKLIF YUBORISH
         socket.on('update-users', (users) => {
             const container = document.getElementById('player-container');
             container.innerHTML = '';
-            users.forEach(user => {
-                if(user.id !== myId) {
+            users.forEach(u => {
+                if(u.id !== myId) {
                     container.innerHTML += `
                         <div class="player-row">
-                            <div class="player-info">
-                                <div class="player-name">${user.name}</div>
-                                <div class="player-score">Ball: ${user.points}</div>
-                            </div>
-                            <button class="invite-btn" onclick="sendInvite('${user.id}')">O'yinga taklif</button>
-                        </div>
-                    `;
+                            <span>${u.name}</span>
+                            <button class="invite-btn" onclick="sendInvite('${u.id}')">Taklif</button>
+                        </div>`;
                 }
             });
         });
 
-        // 4. O'YIN MANTIQI
-        function startRandomGame() {
+        function sendInvite(toId) {
+            socket.emit('send-invite', { fromId: myId, fromName: myName, toId: toId });
+            alert("Taklif yuborildi, kuting...");
+        }
+
+        // 2. TAKLIFNI QABUL QILISH/RAD ETISH
+        socket.on('receive-invite', (data) => {
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('modal-text').innerText = `${data.fromName} sizni o'yinga taklif qilyapti!`;
+            document.getElementById('accept-btn').onclick = () => {
+                socket.emit('accept-invite', data);
+                closeModal();
+            };
+        });
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+        // 3. TASODIFIY RAQIB
+        function findRandom() {
+            socket.emit('find-random', { id: myId, name: myName });
+            document.getElementById('player-container').innerHTML = "Raqib kutilmoqda...";
+        }
+
+        // 4. O'YIN BOSHLANISHI
+        socket.on('start-game', (data) => {
+            isBotGame = false;
+            currentRoom = data.roomId;
+            myColor = data.players[myId];
+            startGameUI();
+        });
+
+        function startGameUI() {
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
             initBoard();
         }
 
+        // 5. BOT BILAN O'YIN
+        function startBotGame() {
+            isBotGame = true;
+            myColor = 'red';
+            startGameUI();
+        }
+
         function initBoard() {
             board = Array(8).fill().map(() => Array(8).fill(null));
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    if ((r + c) % 2 !== 0) {
-                        if (r < 3) board[r][c] = { color: 'light', isDamka: false };
-                        else if (r > 4) board[r][c] = { color: 'red', isDamka: false };
+            for(let r=0; r<8; r++){
+                for(let c=0; c<8; c++){
+                    if((r+c)%2!==0){
+                        if(r<3) board[r][c] = { color: 'light' };
+                        else if(r>4) board[r][c] = { color: 'red' };
                     }
                 }
             }
@@ -131,22 +149,21 @@
         function render() {
             const bDiv = document.getElementById('board');
             bDiv.innerHTML = '';
-            document.getElementById('status-bar').innerText = turn === 'red' ? "Navbat: Qizillar" : "Navbat: Oqlar";
-            
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
+            document.getElementById('status-bar').innerText = (turn === 'red' ? "Navbat: Qizillar" : "Navbat: Oqlar") + (myColor === turn ? " (Siz)" : "");
+
+            for(let r=0; r<8; r++){
+                for(let c=0; c<8; c++){
                     const cell = document.createElement('div');
-                    cell.className = `cell ${(r + c) % 2 !== 0 ? 'black' : 'white'}`;
-                    
+                    cell.className = `cell ${(r+c)%2!==0 ? 'black' : 'white'}`;
                     const p = board[r][c];
-                    if (p) {
+                    if(p){
                         const pDiv = document.createElement('div');
-                        pDiv.className = `piece ${p.color} ${p.isDamka ? 'damka' : ''} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
+                        pDiv.className = `piece ${p.color} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
                         pDiv.onclick = () => {
-                            if (turn === p.color) { selected = { r, c }; render(); }
+                            if(turn === myColor && p.color === myColor) { selected = {r,c}; render(); }
                         };
                         cell.appendChild(pDiv);
-                    } else if (selected) {
+                    } else if(selected) {
                         cell.onclick = () => move(r, c);
                     }
                     bDiv.appendChild(cell);
@@ -155,43 +172,57 @@
         }
 
         function move(toR, toC) {
-            if (!selected) return;
+            if(!selected) return;
             const fromR = selected.r, fromC = selected.c;
-            const piece = board[fromR][fromC];
-
-            // Oddiy yurish yoki urish mantiqi (Soddalashtirilgan versiya)
-            const rDiff = toR - fromR;
-            const cDiff = Math.abs(toC - fromC);
-
-            // Yurishni tekshirish
-            if (Math.abs(rDiff) === 1 && cDiff === 1 && !board[toR][toC]) {
-                board[toR][toC] = piece;
-                board[fromR][fromC] = null;
-                finalizeMove(toR, toC);
-            } 
-            // Urishni tekshirish
-            else if (Math.abs(rDiff) === 2 && cDiff === 2) {
-                const midR = (fromR + toR) / 2;
-                const midC = (fromC + toC) / 2;
-                if (board[midR][midC] && board[midR][midC].color !== piece.color) {
-                    board[toR][toC] = piece;
-                    board[fromR][fromC] = null;
+            if(Math.abs(toR-fromR)===1 && Math.abs(toC-fromC)===1 && !board[toR][toC]){
+                executeMove(fromR, fromC, toR, toC);
+            }
+            // Oddiy urish mantiqi
+            else if(Math.abs(toR-fromR)===2){
+                const midR = (fromR+toR)/2, midC = (fromC+toC)/2;
+                if(board[midR][midC] && board[midR][midC].color !== turn){
                     board[midR][midC] = null;
-                    finalizeMove(toR, toC);
+                    executeMove(fromR, fromC, toR, toC);
                 }
             }
         }
 
-        function finalizeMove(r, c) {
-            // Damka tekshiruvi
-            if (board[r][c].color === 'red' && r === 0) board[r][c].isDamka = true;
-            if (board[r][c].color === 'light' && r === 7) board[r][c].isDamka = true;
-
-            selected = null;
+        function executeMove(fR, fC, tR, tC) {
+            board[tR][tC] = board[fR][fC];
+            board[fR][fC] = null;
             turn = turn === 'red' ? 'light' : 'red';
+            selected = null;
             render();
-            // Socket orqali serverga yuborish (Sinxronizatsiya uchun)
-            socket.emit('move', { r, c, color: turn });
+
+            if(!isBotGame) {
+                socket.emit('make-move', { roomId: currentRoom, board: board, nextTurn: turn });
+            } else if(turn === 'light') {
+                setTimeout(botMove, 800);
+            }
+        }
+
+        socket.on('move-made', (data) => { board = data.board; turn = data.nextTurn; render(); });
+
+        // 6. BOT MANTIQLI (Oddiy tasodifiy yurish)
+        function botMove() {
+            let moves = [];
+            for(let r=0; r<8; r++){
+                for(let c=0; c<8; c++){
+                    if(board[r][c]?.color === 'light'){
+                        const targets = [[r+1, c-1], [r+1, c+1]];
+                        targets.forEach(([tr, tc]) => {
+                            if(tr>=0 && tr<8 && tc>=0 && tc<8 && !board[tr][tc]) moves.push({fR:r, fC:c, tR:tr, tc});
+                        });
+                    }
+                }
+            }
+            if(moves.length > 0){
+                const m = moves[Math.floor(Math.random()*moves.length)];
+                board[m.tR][m.tc] = board[m.fR][m.fC];
+                board[m.fR][m.fC] = null;
+            }
+            turn = 'red';
+            render();
         }
     </script>
 </body>
