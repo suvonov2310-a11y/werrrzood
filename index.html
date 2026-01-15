@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shashka Online Pro</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <title>Shashka Online Elite</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { --purple: #6c5ce7; --pink: #fd79a8; --dark: #1a1a2e; --white: #ffffff; }
-        body { background: var(--dark); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; overflow: hidden; }
 
         /* KIRISH EKRANI */
         #auth-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
@@ -21,31 +19,44 @@
         .btn { background: var(--white); color: var(--purple); border: none; padding: 15px; border-radius: 12px; width: 100%; margin: 8px 0; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
         .btn-pink { background: var(--pink); color: white; }
         
-        .online-list { background: white; color: #333; border-radius: 20px; padding: 15px; min-height: 300px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .online-list { background: white; color: #333; border-radius: 20px; padding: 15px; min-height: 300px; max-height: 50vh; overflow-y: auto; }
         .player-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
         .invite-btn { background: var(--purple); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
 
-        /* TAKLIF OYNASI */
+        /* MODAL */
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: #333; padding: 25px; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.6); z-index: 3000; text-align: center; width: 85%; max-width: 350px; }
 
         /* O'YIN EKRANI */
-        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 20px; }
+        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 10px; }
         #board { display: grid; grid-template-columns: repeat(8, 11.5vw); grid-template-rows: repeat(8, 11.5vw); border: 5px solid var(--purple); background: #eee; }
-        .cell { width: 11.5vw; height: 11.5vw; display: flex; align-items: center; justify-content: center; }
+        .cell { width: 11.5vw; height: 11.5vw; display: flex; align-items: center; justify-content: center; position: relative; }
         .black { background: #34495e; }
         .white { background: #ecf0f1; }
-        .piece { width: 9.5vw; height: 9.5vw; border-radius: 50%; cursor: pointer; position: relative; transition: 0.2s; }
+        
+        .piece { width: 9.5vw; height: 9.5vw; border-radius: 50%; cursor: pointer; transition: 0.2s; position: relative; z-index: 10; }
         .red { background: #e74c3c; box-shadow: inset 0 -4px 5px rgba(0,0,0,0.4); }
-        .light { background: #ecf0f1; box-shadow: inset 0 -4px 5px rgba(0,0,0,0.2); border: 1px solid #bdc3c7; }
-        .selected { transform: scale(1.15); box-shadow: 0 0 15px #2ecc71 !important; border: 3px solid #2ecc71; }
+        .light { background: #f1f2f6; box-shadow: inset 0 -4px 5px rgba(0,0,0,0.2); border: 1px solid #bdc3c7; }
+        
+        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 5vw; }
+        .selected { transform: scale(1.1); box-shadow: 0 0 15px #2ecc71 !important; border: 3px solid #2ecc71; }
+
+        /* MAJBURIY URISH EFFEKTI */
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px #ff0000; transform: scale(1); }
+            50% { box-shadow: 0 0 20px #ff0000, 0 0 30px #ff4d4d; transform: scale(1.05); }
+            100% { box-shadow: 0 0 5px #ff0000; transform: scale(1); }
+        }
+        .must-jump { animation: glow 1s infinite; border: 3px solid #ff4757 !important; }
+
+        #status-bar { background: var(--purple); width: 95%; padding: 10px; border-radius: 12px; text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="auth-screen">
         <h1 style="color:var(--purple); margin-bottom:30px;">Shashka Online</h1>
-        <input type="text" id="username-input" class="input-box" placeholder="Ismingizni kiriting...">
-        <button class="btn btn-pink" style="width:80%; max-width:300px;" onclick="login()">O'yinga kirish</button>
+        <input type="text" id="username-input" class="input-box" placeholder="Ismingiz...">
+        <button class="btn btn-pink" style="width:80%;" onclick="login()">Kirish</button>
     </div>
 
     <div id="lobby">
@@ -55,21 +66,21 @@
             <button class="btn btn-pink" onclick="startBotGame()">🤖 Bot bilan o'ynash</button>
         </div>
         <div class="online-list">
-            <h3 style="color:var(--purple); margin-top:0;">Online o'yinchilar</h3>
-            <div id="player-container">O'yinchilar qidirilmoqda...</div>
+            <h3 style="color:var(--purple); margin:0 0 10px 0;">Online o'yinchilar</h3>
+            <div id="player-container">Qidirilmoqda...</div>
         </div>
     </div>
 
     <div id="modal">
-        <h3 id="modal-text">Sizga taklif tushdi!</h3>
+        <h3 id="modal-text">Taklif tushdi!</h3>
         <button class="btn btn-pink" id="accept-btn">Qabul qilish</button>
         <button class="btn" style="background:#bdc3c7; color:white" onclick="closeModal()">Rad etish</button>
     </div>
 
     <div id="game-screen">
-        <div id="status-bar" style="background:var(--purple); width:90%; padding:12px; border-radius:12px; text-align:center; margin-bottom:15px; font-weight:bold;">Kutilmoqda...</div>
+        <div id="status-bar">Kutilmoqda...</div>
         <div id="board"></div>
-        <button class="btn btn-pink" style="width:150px; margin-top:20px;" onclick="location.reload()">Chiqish</button>
+        <button class="btn btn-pink" style="width:120px; margin-top:15px;" onclick="location.reload()">Chiqish</button>
     </div>
 
     <script>
@@ -83,64 +94,37 @@
         let selected = null;
         let isBotMode = false;
 
-        // LOGIN
         function login() {
             const input = document.getElementById('username-input').value;
             if(input.length < 2) return alert("Ism kiriting!");
             myName = input;
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('lobby').style.display = 'block';
-            document.getElementById('welcome-text').innerText = "Salom, " + myName;
             socket.emit('join-lobby', { id: myId, name: myName });
         }
 
-        // LOBBY YANGILANISHI
         socket.on('update-users', (users) => {
             const container = document.getElementById('player-container');
             container.innerHTML = '';
             users.forEach(u => {
                 if(u.id !== myId) {
-                    container.innerHTML += `
-                        <div class="player-row">
-                            <span><b>${u.name}</b></span>
-                            <button class="invite-btn" onclick="sendInvite('${u.id}')">Taklif</button>
-                        </div>`;
+                    container.innerHTML += `<div class="player-row"><span><b>${u.name}</b></span><button class="invite-btn" onclick="sendInvite('${u.id}')">Taklif</button></div>`;
                 }
             });
-            if(container.innerHTML === '') container.innerHTML = "Hozircha hech kim yo'q...";
+            if(container.innerHTML === '') container.innerHTML = "Hech kim yo'q...";
         });
 
-        // TAKLIF TIZIMI
-        function sendInvite(toId) {
-            socket.emit('send-invite', { fromId: myId, fromName: myName, toId: toId });
-            alert("Taklif yuborildi!");
-        }
-
+        function sendInvite(toId) { socket.emit('send-invite', { fromId: myId, fromName: myName, toId: toId }); alert("Taklif yuborildi!"); }
         socket.on('receive-invite', (data) => {
             document.getElementById('modal').style.display = 'block';
-            document.getElementById('modal-text').innerText = `${data.fromName} sizni o'yinga chorlayapti!`;
-            document.getElementById('accept-btn').onclick = () => {
-                socket.emit('accept-invite', data);
-                closeModal();
-            };
+            document.getElementById('modal-text').innerText = `${data.fromName} taklif qilyapti!`;
+            document.getElementById('accept-btn').onclick = () => { socket.emit('accept-invite', data); closeModal(); };
         });
-
         function closeModal() { document.getElementById('modal').style.display = 'none'; }
         function findRandom() { socket.emit('find-random', { id: myId, name: myName }); }
 
-        // O'YIN BOSHLANISHI
-        socket.on('start-game', (data) => {
-            isBotMode = false;
-            currentRoom = data.roomId;
-            myColor = data.players[myId];
-            initGame();
-        });
-
-        function startBotGame() {
-            isBotMode = true;
-            myColor = 'red';
-            initGame();
-        }
+        socket.on('start-game', (data) => { isBotMode = false; currentRoom = data.roomId; myColor = data.players[myId]; initGame(); });
+        function startBotGame() { isBotMode = true; myColor = 'red'; initGame(); }
 
         function initGame() {
             document.getElementById('lobby').style.display = 'none';
@@ -149,8 +133,8 @@
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
                     if((r+c)%2!==0) {
-                        if(r<3) gameBoard[r][c] = { color: 'light' };
-                        else if(r>4) gameBoard[r][c] = { color: 'red' };
+                        if(r<3) gameBoard[r][c] = { color: 'light', isDamka: false };
+                        else if(r>4) gameBoard[r][c] = { color: 'red', isDamka: false };
                     }
                 }
             }
@@ -161,8 +145,13 @@
             const bDiv = document.getElementById('board');
             bDiv.innerHTML = '';
             const status = document.getElementById('status-bar');
-            status.innerText = (turn === 'red' ? "Qizillar yurishi" : "Oqlar yurishi");
-            if(turn === myColor) status.innerText += " (SIZING NAVBATINGIZ)";
+            
+            const mustJump = getRequiredJumps(turn);
+            const jumpPieces = mustJump.map(m => `${m.fR},${m.fC}`);
+
+            status.innerText = (turn === 'red' ? "Qizillar navbati" : "Oqlar navbati");
+            if(mustJump.length > 0) status.innerText += " (URISH MAJBURIY!)";
+            if(turn === myColor) status.innerText += " - SIZNING NAVBATINGIZ";
 
             for(let r=0; r<8; r++) {
                 for(let c=0; c<8; c++) {
@@ -171,9 +160,12 @@
                     const p = gameBoard[r][c];
                     if(p) {
                         const pDiv = document.createElement('div');
-                        pDiv.className = `piece ${p.color} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
+                        const isRequired = jumpPieces.includes(`${r},${c}`);
+                        pDiv.className = `piece ${p.color} ${p.isDamka ? 'damka' : ''} ${selected?.r===r && selected?.c===c ? 'selected' : ''} ${isRequired && turn === myColor ? 'must-jump' : ''}`;
                         pDiv.onclick = () => {
-                            if(turn === myColor && p.color === myColor) { selected = {r,c}; render(); }
+                            if(turn !== myColor || p.color !== myColor) return;
+                            if(mustJump.length > 0 && !isRequired) return alert("Majburiy urish kerak!");
+                            selected = {r,c}; render();
                         };
                         cell.appendChild(pDiv);
                     } else if(selected) {
@@ -184,51 +176,111 @@
             }
         }
 
+        function getRequiredJumps(color) {
+            let jumps = [];
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(gameBoard[r][c]?.color === color) {
+                        const pj = getPieceJumps(r, c);
+                        if(pj.length > 0) jumps.push(...pj);
+                    }
+                }
+            }
+            return jumps;
+        }
+
+        function getPieceJumps(r, c) {
+            const p = gameBoard[r][c];
+            let jumps = [];
+            const dirs = [[1,1], [1,-1], [-1,1], [-1,-1]];
+            dirs.forEach(([dr, dc]) => {
+                if(p.isDamka) {
+                    let nr = r + dr, nc = c + dc;
+                    while(nr>=0 && nr<8 && nc>=0 && nc<8 && !gameBoard[nr][nc]) { nr+=dr; nc+=dc; }
+                    let tr = nr + dr, tc = nc + dc;
+                    if(nr>=0 && nr<8 && nc>=0 && nc<8 && gameBoard[nr][nc] && gameBoard[nr][nc].color !== p.color) {
+                        while(tr>=0 && tr<8 && tc>=0 && tc<8 && !gameBoard[tr][tc]) {
+                            jumps.push({tR:tr, tC:tc, cap:{r:nr, c:nc}, fR:r, fC:c});
+                            tr+=dr; tc+=dc;
+                        }
+                    }
+                } else {
+                    let mr = r+dr, mc = c+dc, tr = r+dr*2, tc = c+dc*2;
+                    if(tr>=0 && tr<8 && tc>=0 && tc<8 && gameBoard[mr][mc] && gameBoard[mr][mc].color !== p.color && !gameBoard[tr][tc]) {
+                        jumps.push({tR:tr, tC:tc, cap:{r:mr, c:mc}, fR:r, fC:c});
+                    }
+                }
+            });
+            return jumps;
+        }
+
         function movePiece(toR, toC) {
             if(!selected) return;
-            const fromR = selected.r, fromC = selected.c;
+            const piece = gameBoard[selected.r][selected.c];
+            const jumps = getPieceJumps(selected.r, selected.c);
+            const move = jumps.find(m => m.tR === toR && m.tC === toC);
             
-            // Oddiy yurish (1 qadam)
-            if(Math.abs(toR-fromR)===1 && Math.abs(toC-fromC)===1 && !gameBoard[toR][toC]) {
-                applyMove(fromR, fromC, toR, toC);
-            }
-            // Urish (2 qadam)
-            else if(Math.abs(toR-fromR)===2 && Math.abs(toC-fromC)===2) {
-                const midR = (fromR+toR)/2, midC = (fromC+toC)/2;
-                if(gameBoard[midR][midC] && gameBoard[midR][midC].color !== turn) {
-                    gameBoard[midR][midC] = null;
-                    applyMove(fromR, fromC, toR, toC);
+            if(!move && jumps.length === 0) {
+                // Oddiy yurish
+                const distR = Math.abs(toR - selected.r), distC = Math.abs(toC - selected.c);
+                if(piece.isDamka) {
+                    if(distR === distC) {
+                        let dr = (toR - selected.r)/distR, dc = (toC - selected.c)/distC;
+                        let blocked = false;
+                        for(let i=1; i<distR; i++) if(gameBoard[selected.r+i*dr][selected.c+i*dc]) blocked = true;
+                        if(!blocked && !gameBoard[toR][toC]) applyMove(selected.r, selected.c, toR, toC);
+                    }
+                } else {
+                    const dir = piece.color === 'red' ? -1 : 1;
+                    if(toR - selected.r === dir && distC === 1 && !gameBoard[toR][toC]) applyMove(selected.r, selected.c, toR, toC);
                 }
+            } else if(move) {
+                // Urish
+                gameBoard[move.cap.r][move.cap.c] = null;
+                applyMove(selected.r, selected.c, toR, toC, true);
             }
         }
 
-        function applyMove(fR, fC, tR, tC) {
-            gameBoard[tR][tC] = gameBoard[fR][fC];
+        function applyMove(fR, fC, tR, tC, wasJump = false) {
+            const p = gameBoard[fR][fC];
+            gameBoard[tR][tC] = p;
             gameBoard[fR][fC] = null;
-            turn = (turn === 'red' ? 'light' : 'red');
-            selected = null;
+            if(!p.isDamka && ((p.color === 'red' && tR === 0) || (p.color === 'light' && tR === 7))) p.isDamka = true;
+
+            if(wasJump && getPieceJumps(tR, tC).length > 0) {
+                selected = {r:tR, c:tC};
+            } else {
+                turn = (turn === 'red' ? 'light' : 'red');
+                selected = null;
+            }
             render();
             if(!isBotMode) socket.emit('make-move', { roomId: currentRoom, board: gameBoard, nextTurn: turn });
-            else if(turn === 'light') setTimeout(botLogic, 600);
+            else if(turn === 'light') setTimeout(botMove, 600);
         }
 
         socket.on('move-made', (data) => { gameBoard = data.board; turn = data.nextTurn; render(); });
 
-        function botLogic() {
-            // Bot uchun juda oddiy mantiq: birinchi duch kelgan yurishni qiladi
-            for(let r=0; r<8; r++) {
-                for(let c=0; c<8; c++) {
-                    if(gameBoard[r][c]?.color === 'light') {
-                        const moves = [[r+1,c-1], [r+1,c+1]];
-                        for(let [tr,tc] of moves) {
-                            if(tr<8 && tc>=0 && tc<8 && !gameBoard[tr][tc]) {
-                                applyMove(r, c, tr, tc); return;
+        function botMove() {
+            const jumps = getRequiredJumps('light');
+            let move = jumps.length > 0 ? jumps[0] : null;
+            if(!move) {
+                for(let r=0; r<8; r++) {
+                    for(let c=0; c<8; c++) {
+                        if(gameBoard[r][c]?.color === 'light') {
+                            const dirs = [[1,1],[1,-1]];
+                            for(let [dr,dc] of dirs) {
+                                let tr = r+dr, tc = c+dc;
+                                if(tr<8 && tc>=0 && tc<8 && !gameBoard[tr][tc]) { move = {fR:r, fC:c, tR:tr, tC:tc}; break; }
                             }
                         }
+                        if(move) break;
                     }
                 }
             }
-            turn = 'red'; render();
+            if(move) {
+                selected = {r:move.fR, c:move.fC};
+                movePiece(move.tR, move.tC);
+            } else { turn = 'red'; render(); }
         }
     </script>
 </body>
