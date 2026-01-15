@@ -3,78 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shashka Online Elite</title>
+    <title>Shashka Online Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --purple: #6c5ce7; --pink: #fd79a8; --dark: #1a1a2e; }
-        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; }
-        
+        :root { --purple: #6c5ce7; --pink: #fd79a8; --dark: #1a1a2e; --white: #ffffff; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; overflow-x: hidden; }
+
+        /* KIRISH EKRANI */
+        #auth-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .input-box { padding: 15px; border-radius: 12px; border: 2px solid var(--purple); width: 80%; max-width: 300px; font-size: 18px; margin-bottom: 20px; text-align: center; }
+
         /* LOBBY */
-        #lobby { padding: 15px; }
-        .header-card { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 20px; }
-        .btn { background: white; color: var(--purple); border: none; padding: 12px; border-radius: 10px; width: 100%; margin: 5px 0; font-weight: bold; cursor: pointer; }
+        #lobby { padding: 15px; display: none; }
+        .header-card { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 20px; padding: 25px; text-align: center; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .btn { background: var(--white); color: var(--purple); border: none; padding: 15px; border-radius: 12px; width: 100%; margin: 8px 0; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
         .btn-pink { background: var(--pink); color: white; }
         
-        .online-list { background: #fff; color: #333; border-radius: 20px; padding: 15px; min-height: 250px; }
-        .player-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; align-items: center; }
-        .invite-btn { background: var(--purple); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        .online-list { background: white; color: #333; border-radius: 20px; padding: 15px; min-height: 300px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .player-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
+        .invite-btn { background: var(--purple); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
 
-        /* MODAL (Taklif oynasi) */
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; text-align: center; width: 80%; }
+        /* TAKLIF OYNASI */
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: #333; padding: 25px; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.6); z-index: 3000; text-align: center; width: 85%; max-width: 350px; }
 
-        /* BOARD */
-        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 10px; }
-        #board { display: grid; grid-template-columns: repeat(8, 11.5vw); grid-template-rows: repeat(8, 11.5vw); border: 4px solid var(--purple); background: #fff; }
+        /* O'YIN EKRANI */
+        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 20px; }
+        #board { display: grid; grid-template-columns: repeat(8, 11.5vw); grid-template-rows: repeat(8, 11.5vw); border: 5px solid var(--purple); background: #eee; }
         .cell { width: 11.5vw; height: 11.5vw; display: flex; align-items: center; justify-content: center; }
-        .black { background: #333; }
-        .white { background: #f0f0f0; }
-        .piece { width: 9.5vw; height: 9.5vw; border-radius: 50%; position: relative; }
-        .red { background: #d63031; }
-        .light { background: #f1f2f6; }
-        .selected { outline: 3px solid #00ff00; }
+        .black { background: #34495e; }
+        .white { background: #ecf0f1; }
+        .piece { width: 9.5vw; height: 9.5vw; border-radius: 50%; cursor: pointer; position: relative; transition: 0.2s; }
+        .red { background: #e74c3c; box-shadow: inset 0 -4px 5px rgba(0,0,0,0.4); }
+        .light { background: #ecf0f1; box-shadow: inset 0 -4px 5px rgba(0,0,0,0.2); border: 1px solid #bdc3c7; }
+        .selected { transform: scale(1.15); box-shadow: 0 0 15px #2ecc71 !important; border: 3px solid #2ecc71; }
     </style>
 </head>
 <body>
 
+    <div id="auth-screen">
+        <h1 style="color:var(--purple); margin-bottom:30px;">Shashka Online</h1>
+        <input type="text" id="username-input" class="input-box" placeholder="Ismingizni kiriting...">
+        <button class="btn btn-pink" style="width:80%; max-width:300px;" onclick="login()">O'yinga kirish</button>
+    </div>
+
     <div id="lobby">
         <div class="header-card">
-            <h2>Shashka Online</h2>
-            <button class="btn btn-pink" onclick="findRandom()">🎲 Tasodifiy Raqib</button>
-            <button class="btn" onclick="startBotGame()">🤖 Bot bilan o'ynash</button>
+            <h2 id="welcome-text">Xush kelibsiz!</h2>
+            <button class="btn" onclick="findRandom()">🎲 Tasodifiy Raqib</button>
+            <button class="btn btn-pink" onclick="startBotGame()">🤖 Bot bilan o'ynash</button>
         </div>
         <div class="online-list">
-            <h3 style="color:var(--purple); margin:0 0 10px 0">Onlayn o'yinchilar</h3>
-            <div id="player-container">Qidirilmoqda...</div>
+            <h3 style="color:var(--purple); margin-top:0;">Online o'yinchilar</h3>
+            <div id="player-container">O'yinchilar qidirilmoqda...</div>
         </div>
     </div>
 
     <div id="modal">
-        <p id="modal-text"></p>
-        <button class="invite-btn" id="accept-btn">Qabul qilish</button>
-        <button class="invite-btn" style="background:#666" onclick="closeModal()">Rad etish</button>
+        <h3 id="modal-text">Sizga taklif tushdi!</h3>
+        <button class="btn btn-pink" id="accept-btn">Qabul qilish</button>
+        <button class="btn" style="background:#bdc3c7; color:white" onclick="closeModal()">Rad etish</button>
     </div>
 
     <div id="game-screen">
-        <div id="status-bar" style="background:var(--purple); padding:10px; width:90%; border-radius:10px; text-align:center; margin-bottom:10px">Navbat: Qizillar</div>
+        <div id="status-bar" style="background:var(--purple); width:90%; padding:12px; border-radius:12px; text-align:center; margin-bottom:15px; font-weight:bold;">Kutilmoqda...</div>
         <div id="board"></div>
-        <button class="btn" style="width:50%; margin-top:10px" onclick="location.reload()">Chiqish</button>
+        <button class="btn btn-pink" style="width:150px; margin-top:20px;" onclick="location.reload()">Chiqish</button>
     </div>
 
     <script>
         const socket = io();
-        let myId = "id_" + Math.random().toString(16).slice(2);
-        let myName = "Buxorolik_" + Math.floor(Math.random() * 9000 + 1000);
+        let myId = "u_" + Math.random().toString(36).substr(2, 9);
+        let myName = "";
         let myColor = null;
         let currentRoom = null;
-        let board = [];
+        let gameBoard = [];
         let turn = 'red';
-        let isBotGame = false;
+        let selected = null;
+        let isBotMode = false;
 
-        socket.emit('join-lobby', { id: myId, name: myName });
+        // LOGIN
+        function login() {
+            const input = document.getElementById('username-input').value;
+            if(input.length < 2) return alert("Ism kiriting!");
+            myName = input;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('lobby').style.display = 'block';
+            document.getElementById('welcome-text').innerText = "Salom, " + myName;
+            socket.emit('join-lobby', { id: myId, name: myName });
+        }
 
-        // 1. ONLAYN RO'YXAT VA TAKLIF YUBORISH
+        // LOBBY YANGILANISHI
         socket.on('update-users', (users) => {
             const container = document.getElementById('player-container');
             container.innerHTML = '';
@@ -82,22 +102,23 @@
                 if(u.id !== myId) {
                     container.innerHTML += `
                         <div class="player-row">
-                            <span>${u.name}</span>
+                            <span><b>${u.name}</b></span>
                             <button class="invite-btn" onclick="sendInvite('${u.id}')">Taklif</button>
                         </div>`;
                 }
             });
+            if(container.innerHTML === '') container.innerHTML = "Hozircha hech kim yo'q...";
         });
 
+        // TAKLIF TIZIMI
         function sendInvite(toId) {
             socket.emit('send-invite', { fromId: myId, fromName: myName, toId: toId });
-            alert("Taklif yuborildi, kuting...");
+            alert("Taklif yuborildi!");
         }
 
-        // 2. TAKLIFNI QABUL QILISH/RAD ETISH
         socket.on('receive-invite', (data) => {
             document.getElementById('modal').style.display = 'block';
-            document.getElementById('modal-text').innerText = `${data.fromName} sizni o'yinga taklif qilyapti!`;
+            document.getElementById('modal-text').innerText = `${data.fromName} sizni o'yinga chorlayapti!`;
             document.getElementById('accept-btn').onclick = () => {
                 socket.emit('accept-invite', data);
                 closeModal();
@@ -105,41 +126,31 @@
         });
 
         function closeModal() { document.getElementById('modal').style.display = 'none'; }
+        function findRandom() { socket.emit('find-random', { id: myId, name: myName }); }
 
-        // 3. TASODIFIY RAQIB
-        function findRandom() {
-            socket.emit('find-random', { id: myId, name: myName });
-            document.getElementById('player-container').innerHTML = "Raqib kutilmoqda...";
-        }
-
-        // 4. O'YIN BOSHLANISHI
+        // O'YIN BOSHLANISHI
         socket.on('start-game', (data) => {
-            isBotGame = false;
+            isBotMode = false;
             currentRoom = data.roomId;
             myColor = data.players[myId];
-            startGameUI();
+            initGame();
         });
 
-        function startGameUI() {
+        function startBotGame() {
+            isBotMode = true;
+            myColor = 'red';
+            initGame();
+        }
+
+        function initGame() {
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
-            initBoard();
-        }
-
-        // 5. BOT BILAN O'YIN
-        function startBotGame() {
-            isBotGame = true;
-            myColor = 'red';
-            startGameUI();
-        }
-
-        function initBoard() {
-            board = Array(8).fill().map(() => Array(8).fill(null));
-            for(let r=0; r<8; r++){
-                for(let c=0; c<8; c++){
-                    if((r+c)%2!==0){
-                        if(r<3) board[r][c] = { color: 'light' };
-                        else if(r>4) board[r][c] = { color: 'red' };
+            gameBoard = Array(8).fill().map(() => Array(8).fill(null));
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if((r+c)%2!==0) {
+                        if(r<3) gameBoard[r][c] = { color: 'light' };
+                        else if(r>4) gameBoard[r][c] = { color: 'red' };
                     }
                 }
             }
@@ -149,14 +160,16 @@
         function render() {
             const bDiv = document.getElementById('board');
             bDiv.innerHTML = '';
-            document.getElementById('status-bar').innerText = (turn === 'red' ? "Navbat: Qizillar" : "Navbat: Oqlar") + (myColor === turn ? " (Siz)" : "");
+            const status = document.getElementById('status-bar');
+            status.innerText = (turn === 'red' ? "Qizillar yurishi" : "Oqlar yurishi");
+            if(turn === myColor) status.innerText += " (SIZING NAVBATINGIZ)";
 
-            for(let r=0; r<8; r++){
-                for(let c=0; c<8; c++){
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
                     const cell = document.createElement('div');
                     cell.className = `cell ${(r+c)%2!==0 ? 'black' : 'white'}`;
-                    const p = board[r][c];
-                    if(p){
+                    const p = gameBoard[r][c];
+                    if(p) {
                         const pDiv = document.createElement('div');
                         pDiv.className = `piece ${p.color} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
                         pDiv.onclick = () => {
@@ -164,65 +177,58 @@
                         };
                         cell.appendChild(pDiv);
                     } else if(selected) {
-                        cell.onclick = () => move(r, c);
+                        cell.onclick = () => movePiece(r, c);
                     }
                     bDiv.appendChild(cell);
                 }
             }
         }
 
-        function move(toR, toC) {
+        function movePiece(toR, toC) {
             if(!selected) return;
             const fromR = selected.r, fromC = selected.c;
-            if(Math.abs(toR-fromR)===1 && Math.abs(toC-fromC)===1 && !board[toR][toC]){
-                executeMove(fromR, fromC, toR, toC);
+            
+            // Oddiy yurish (1 qadam)
+            if(Math.abs(toR-fromR)===1 && Math.abs(toC-fromC)===1 && !gameBoard[toR][toC]) {
+                applyMove(fromR, fromC, toR, toC);
             }
-            // Oddiy urish mantiqi
-            else if(Math.abs(toR-fromR)===2){
+            // Urish (2 qadam)
+            else if(Math.abs(toR-fromR)===2 && Math.abs(toC-fromC)===2) {
                 const midR = (fromR+toR)/2, midC = (fromC+toC)/2;
-                if(board[midR][midC] && board[midR][midC].color !== turn){
-                    board[midR][midC] = null;
-                    executeMove(fromR, fromC, toR, toC);
+                if(gameBoard[midR][midC] && gameBoard[midR][midC].color !== turn) {
+                    gameBoard[midR][midC] = null;
+                    applyMove(fromR, fromC, toR, toC);
                 }
             }
         }
 
-        function executeMove(fR, fC, tR, tC) {
-            board[tR][tC] = board[fR][fC];
-            board[fR][fC] = null;
-            turn = turn === 'red' ? 'light' : 'red';
+        function applyMove(fR, fC, tR, tC) {
+            gameBoard[tR][tC] = gameBoard[fR][fC];
+            gameBoard[fR][fC] = null;
+            turn = (turn === 'red' ? 'light' : 'red');
             selected = null;
             render();
-
-            if(!isBotGame) {
-                socket.emit('make-move', { roomId: currentRoom, board: board, nextTurn: turn });
-            } else if(turn === 'light') {
-                setTimeout(botMove, 800);
-            }
+            if(!isBotMode) socket.emit('make-move', { roomId: currentRoom, board: gameBoard, nextTurn: turn });
+            else if(turn === 'light') setTimeout(botLogic, 600);
         }
 
-        socket.on('move-made', (data) => { board = data.board; turn = data.nextTurn; render(); });
+        socket.on('move-made', (data) => { gameBoard = data.board; turn = data.nextTurn; render(); });
 
-        // 6. BOT MANTIQLI (Oddiy tasodifiy yurish)
-        function botMove() {
-            let moves = [];
-            for(let r=0; r<8; r++){
-                for(let c=0; c<8; c++){
-                    if(board[r][c]?.color === 'light'){
-                        const targets = [[r+1, c-1], [r+1, c+1]];
-                        targets.forEach(([tr, tc]) => {
-                            if(tr>=0 && tr<8 && tc>=0 && tc<8 && !board[tr][tc]) moves.push({fR:r, fC:c, tR:tr, tc});
-                        });
+        function botLogic() {
+            // Bot uchun juda oddiy mantiq: birinchi duch kelgan yurishni qiladi
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(gameBoard[r][c]?.color === 'light') {
+                        const moves = [[r+1,c-1], [r+1,c+1]];
+                        for(let [tr,tc] of moves) {
+                            if(tr<8 && tc>=0 && tc<8 && !gameBoard[tr][tc]) {
+                                applyMove(r, c, tr, tc); return;
+                            }
+                        }
                     }
                 }
             }
-            if(moves.length > 0){
-                const m = moves[Math.floor(Math.random()*moves.length)];
-                board[m.tR][m.tc] = board[m.fR][m.fC];
-                board[m.fR][m.fC] = null;
-            }
-            turn = 'red';
-            render();
+            turn = 'red'; render();
         }
     </script>
 </body>
