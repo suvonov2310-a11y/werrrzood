@@ -1,79 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Shashka Elite v2</title>
+    <title>Shashka Online Elite</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    
     <style>
-        :root { --gold: #fca311; --bg: #121212; --cell-dark: #1a1a1a; --cell-light: #e0e0e0; }
-        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; touch-action: manipulation; }
-        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 5px solid var(--gold); margin-top: 10px; }
+        :root { --purple: #6c5ce7; --pink: #fd79a8; --dark: #1a1a2e; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        
+        /* LOBBY DIZAYNI (Siz yuborgan rasmdagidek) */
+        #lobby { padding: 15px; display: block; }
+        .header-card { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20px; }
+        .btn { background: white; color: var(--purple); border: none; padding: 15px; border-radius: 12px; width: 100%; margin: 8px 0; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-pink { background: var(--pink); color: white; }
+        .btn:active { transform: scale(0.98); }
+
+        .online-list { background: #fff; color: #333; border-radius: 20px; padding: 20px; min-height: 300px; }
+        .player-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; align-items: center; }
+        .player-name { font-weight: bold; color: var(--dark); }
+        .player-score { font-size: 12px; color: #666; }
+        .invite-btn { background: var(--purple); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+
+        /* O'YIN DOSKASI DIZAYNI */
+        #game-screen { display: none; flex-direction: column; align-items: center; padding-top: 20px; }
+        #status-bar { background: var(--purple); width: 90%; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; font-weight: bold; }
+        #board { display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw); border: 5px solid var(--purple); background: #fff; }
         .cell { width: 11vw; height: 11vw; display: flex; align-items: center; justify-content: center; }
-        .black { background: var(--cell-dark); } .white { background: var(--cell-light); }
-        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.2s; z-index: 5; }
-        .red { background: #d00000; box-shadow: inset 0 0 10px #000; }
-        .light { background: #ffffff; color: black; box-shadow: inset 0 0 10px #999; border: 1px solid #333; }
-        .selected { outline: 4px solid var(--gold); transform: scale(1.1); box-shadow: 0 0 20px var(--gold); }
-        .damka { border: 3px solid gold; box-shadow: 0 0 15px gold; font-weight: bold; }
-        #status { margin-top: 10px; padding: 12px; background: var(--gold); width: 85vw; text-align: center; border-radius: 5px; color: #000; font-weight: bold; }
-        #chat-area { width: 88vw; height: 100px; background: #222; margin-top: 10px; border-radius: 5px; display: flex; flex-direction: column; font-size: 12px; }
-        #messages { flex: 1; overflow-y: auto; padding: 5px; display: flex; flex-direction: column; }
-        .msg { margin: 2px; padding: 4px 8px; border-radius: 4px; max-width: 75%; }
-        .me { background: var(--gold); color: black; align-self: flex-end; }
-        .them { background: #444; color: white; align-self: flex-start; }
-        #login { margin-top: 80px; text-align: center; padding: 20px; }
-        input { padding: 12px; border-radius: 5px; border: none; width: 70vw; margin-bottom: 10px; font-size: 16px; }
-        .btn { padding: 12px 25px; background: var(--gold); border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin: 5px; }
+        .black { background: #333; }
+        .white { background: #f0f0f0; }
+        
+        .piece { width: 9vw; height: 9vw; border-radius: 50%; cursor: pointer; position: relative; transition: 0.2s; }
+        .red { background: #d63031; box-shadow: inset 0 0 10px #000; }
+        .light { background: #f1f2f6; box-shadow: inset 0 0 10px #999; }
+        .damka { border: 3px solid gold; box-shadow: 0 0 15px gold !important; }
+        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; }
+        .selected { outline: 4px solid #00ff00; transform: scale(1.1); z-index: 10; }
     </style>
 </head>
 <body>
-    <div id="login">
-        <h2 style="color:var(--gold)">SHASHKA ELITE</h2>
-        <input type="text" id="rid" placeholder="Xona ID (masalan: 777)"> <br>
-        <button class="btn" onclick="join(false)">ONLINE O'YNASH</button> <br>
-        <button class="btn" style="background:#444; color:white;" onclick="join(true)">BOT BILAN O'YNASH</button>
-    </div>
 
-    <div id="game" style="display:none;">
-        <div id="status">Tayyorlaning...</div>
-        <div id="board"></div>
-        <div id="chat-area">
-            <div id="messages"></div>
-            <div style="display:flex; border-top:1px solid #444;">
-                <input type="text" id="chat-input" placeholder="Xabar..." style="flex:1; margin:0; padding:8px; background:transparent; color:white; width:auto;">
-                <button onclick="sendMessage()" style="background:var(--gold); border:none; padding:8px 15px;">➤</button>
+    <div id="lobby">
+        <div class="header-card">
+            <h1 style="margin:0 0 15px 0">Shashka Online</h1>
+            <button class="btn">🔍 O'yin Topish</button>
+            <button class="btn">👥 Do'stni taklif qilish</button>
+            <button class="btn btn-pink" onclick="startRandomGame()">🎲 Tasodifiy o'yin</button>
+        </div>
+
+        <div class="online-list">
+            <h3 style="margin:0 0 15px 0; color:var(--purple)">Online o'yinchilar</h3>
+            <div id="player-container">
+                <p>O'yinchilar qidirilmoqda...</p>
             </div>
         </div>
     </div>
 
-    <script>
-        const socket = io();
-        let myRoom, selected = null, gameActive = false, myColor = null, turn = 'red', isBotMode = false;
-        let board = Array(8).fill().map(() => Array(8).fill(null));
+    <div id="game-screen">
+        <div id="status-bar">Navbat: Qizillar</div>
+        <div id="board"></div>
+        <button class="btn btn-pink" style="width:50%; margin-top:20px;" onclick="location.reload()">Chiqish</button>
+    </div>
 
-        function join(bot) {
-            isBotMode = bot;
-            myRoom = document.getElementById('rid').value || "solo";
-            document.getElementById('login').style.display = 'none';
-            document.getElementById('game').style.display = 'block';
-            if(!bot) socket.emit('join-room', myRoom);
-            else { gameActive = true; myColor = 'red'; }
+    <script>
+        // 1. FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_AaQCbi4ipNXkzqRwq9BxQirC1rp-yC0",
+            authDomain: "shashka-online.firebaseapp.com",
+            projectId: "shashka-online",
+            storageBucket: "shashka-online.firebasestorage.app",
+            messagingSenderId: "1097808487424",
+            appId: "1:1097808487424:web:02d79c42b15a09c93724e5"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const socket = io();
+
+        // 2. O'YIN O'ZGARUVCHILARI
+        let myId = "id_" + Math.random().toString(16).slice(2);
+        let myName = "Buxorolik_" + Math.floor(Math.random() * 9000 + 1000);
+        let board = [];
+        let selected = null;
+        let turn = 'red';
+        let myColor = 'red';
+
+        // 3. ONLINE RO'YXATNI BOSHQARISH
+        socket.emit('join-lobby', { id: myId, name: myName, points: 1000 });
+
+        socket.on('update-users', (users) => {
+            const container = document.getElementById('player-container');
+            container.innerHTML = '';
+            users.forEach(user => {
+                if(user.id !== myId) {
+                    container.innerHTML += `
+                        <div class="player-row">
+                            <div class="player-info">
+                                <div class="player-name">${user.name}</div>
+                                <div class="player-score">Ball: ${user.points}</div>
+                            </div>
+                            <button class="invite-btn" onclick="sendInvite('${user.id}')">O'yinga taklif</button>
+                        </div>
+                    `;
+                }
+            });
+        });
+
+        // 4. O'YIN MANTIQI
+        function startRandomGame() {
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
             initBoard();
         }
 
-        socket.on('status-update', (data) => {
-            if(isBotMode) return;
-            gameActive = data.active;
-            if (myColor === null) myColor = (data.count === 1) ? 'red' : 'light';
-            render();
-        });
-
         function initBoard() {
-            for(let r=0; r<8; r++) {
-                for(let c=0; c<8; c++) {
-                    if((r+c)%2 !== 0) {
-                        if(r < 3) board[r][c] = { color: 'light', isDamka: false };
-                        else if(r > 4) board[r][c] = { color: 'red', isDamka: false };
+            board = Array(8).fill().map(() => Array(8).fill(null));
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if ((r + c) % 2 !== 0) {
+                        if (r < 3) board[r][c] = { color: 'light', isDamka: false };
+                        else if (r > 4) board[r][c] = { color: 'red', isDamka: false };
                     }
                 }
             }
@@ -83,185 +131,67 @@
         function render() {
             const bDiv = document.getElementById('board');
             bDiv.innerHTML = '';
-            document.getElementById('status').innerText = (turn === myColor) ? "SIZNING NAVBATINGIZ" : "RAQIB NAVBATI...";
+            document.getElementById('status-bar').innerText = turn === 'red' ? "Navbat: Qizillar" : "Navbat: Oqlar";
             
-            for(let r=0; r<8; r++) {
-                for(let c=0; c<8; c++) {
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
                     const cell = document.createElement('div');
-                    const isBlack = (r+c)%2 !== 0;
-                    cell.className = `cell ${isBlack ? 'black' : 'white'}`;
+                    cell.className = `cell ${(r + c) % 2 !== 0 ? 'black' : 'white'}`;
+                    
                     const p = board[r][c];
-                    if(p) {
-                        const div = document.createElement('div');
-                        div.className = `piece ${p.color} ${p.isDamka ? 'damka' : ''}`;
-                        if(p.isDamka) div.innerHTML = '👑';
-                        if(selected && selected.r === r && selected.c === c) div.classList.add('selected');
-                        div.onpointerdown = () => {
-                            if(gameActive && turn === myColor && p.color === myColor) {
-                                selected = {r, c, ...p};
-                                render();
-                            }
+                    if (p) {
+                        const pDiv = document.createElement('div');
+                        pDiv.className = `piece ${p.color} ${p.isDamka ? 'damka' : ''} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
+                        pDiv.onclick = () => {
+                            if (turn === p.color) { selected = { r, c }; render(); }
                         };
-                        cell.appendChild(div);
-                    } else if(selected && isBlack) {
-                        cell.onpointerdown = () => validateMove(r, c);
+                        cell.appendChild(pDiv);
+                    } else if (selected) {
+                        cell.onclick = () => move(r, c);
                     }
                     bDiv.appendChild(cell);
                 }
             }
         }
 
-        // --- HARAKATLAR MANTIQLARI ---
-        function getMustJumps(color) {
-            let jumps = [];
-            for(let r=0; r<8; r++) {
-                for(let c=0; c<8; c++) {
-                    if(board[r][c] && board[r][c].color === color) {
-                        let moves = getPieceJumps(r, c);
-                        if(moves.length > 0) jumps.push({r, c, moves});
-                    }
+        function move(toR, toC) {
+            if (!selected) return;
+            const fromR = selected.r, fromC = selected.c;
+            const piece = board[fromR][fromC];
+
+            // Oddiy yurish yoki urish mantiqi (Soddalashtirilgan versiya)
+            const rDiff = toR - fromR;
+            const cDiff = Math.abs(toC - fromC);
+
+            // Yurishni tekshirish
+            if (Math.abs(rDiff) === 1 && cDiff === 1 && !board[toR][toC]) {
+                board[toR][toC] = piece;
+                board[fromR][fromC] = null;
+                finalizeMove(toR, toC);
+            } 
+            // Urishni tekshirish
+            else if (Math.abs(rDiff) === 2 && cDiff === 2) {
+                const midR = (fromR + toR) / 2;
+                const midC = (fromC + toC) / 2;
+                if (board[midR][midC] && board[midR][midC].color !== piece.color) {
+                    board[toR][toC] = piece;
+                    board[fromR][fromC] = null;
+                    board[midR][midC] = null;
+                    finalizeMove(toR, toC);
                 }
             }
-            return jumps;
         }
 
-        function getPieceJumps(r, c) {
-            let jumps = [];
-            const p = board[r][c];
-            const dirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
-            for(let [dr, dc] of dirs) {
-                if(p.isDamka) {
-                    for(let i=1; i<8; i++) {
-                        let mR = r+dr*i, mC = c+dc*i, eR = r+dr*(i+1), eC = c+dc*(i+1);
-                        if(eR<0||eR>=8||eC<0||eC>=8) break;
-                        if(board[mR][mC]) {
-                            if(board[mR][mC].color !== p.color && !board[eR][eC]) jumps.push({toR:eR, toC:eC, vR:mR, vC:mC});
-                            break;
-                        }
-                    }
-                } else {
-                    let mR = r+dr, mC = c+dc, eR = r+dr*2, eC = c+dc*2;
-                    if(eR>=0&&eR<8&&eC>=0&&eC<8 && board[mR][mC] && board[mR][mC].color!==p.color && !board[eR][eC])
-                        jumps.push({toR:eR, toC:eC, vR:mR, vC:mC});
-                }
-            }
-            return jumps;
-        }
+        function finalizeMove(r, c) {
+            // Damka tekshiruvi
+            if (board[r][c].color === 'red' && r === 0) board[r][c].isDamka = true;
+            if (board[r][c].color === 'light' && r === 7) board[r][c].isDamka = true;
 
-        function validateMove(r, c) {
-            const jumps = getMustJumps(myColor);
-            const pieceJumps = getPieceJumps(selected.r, selected.c);
-            const foundJump = pieceJumps.find(j => j.toR === r && j.toC === c);
-
-            if(jumps.length > 0) {
-                if(foundJump) {
-                    board[foundJump.vR][foundJump.vC] = null;
-                    applyMove(r, c, true);
-                }
-                return;
-            }
-
-            // Oddiy yurish
-            const rDiff = r - selected.r, cDiff = Math.abs(c - selected.c);
-            if(selected.isDamka) {
-                if(Math.abs(rDiff) === cDiff && isPathClear(selected.r, selected.c, r, c)) applyMove(r, c, false);
-            } else {
-                const dir = (selected.color === 'red' ? -1 : 1);
-                if(rDiff === dir && cDiff === 1) applyMove(r, c, false);
-            }
-        }
-
-        function isPathClear(r1, c1, r2, c2) {
-            let dr = r2>r1?1:-1, dc = c2>c1?1:-1;
-            let currR = r1+dr, currC = c1+dc;
-            while(currR !== r2) {
-                if(board[currR][currC]) return false;
-                currR += dr; currC += dc;
-            }
-            return true;
-        }
-
-        function applyMove(r, c, jumped) {
-            let damka = selected.isDamka || (selected.color==='red'&&r===0) || (selected.color==='light'&&r===7);
-            if(!isBotMode) socket.emit('move', { roomId: myRoom, move: { from:{r:selected.r, c:selected.c}, to:{r, c}, color:selected.color, isDamka:damka, jumped } });
-            
-            board[selected.r][selected.c] = null;
-            board[r][c] = { color:selected.color, isDamka:damka };
-            
-            if(jumped && getPieceJumps(r, c).length > 0) {
-                selected = {r, c, color:selected.color, isDamka:damka};
-            } else {
-                selected = null; turn = (turn === 'red' ? 'light' : 'red');
-                if(isBotMode && turn === 'light') setTimeout(botMove, 600);
-            }
+            selected = null;
+            turn = turn === 'red' ? 'light' : 'red';
             render();
-        }
-
-        // --- BOT MANTIQI ---
-        function botMove() {
-            const jumps = getMustJumps('light');
-            let move;
-            if(jumps.length > 0) {
-                const p = jumps[Math.floor(Math.random()*jumps.length)];
-                const m = p.moves[Math.floor(Math.random()*p.moves.length)];
-                move = { from: {r:p.r, c:p.c}, to: {r:m.toR, c:m.toC}, vR: m.vR, vC: m.vC, jumped: true };
-            } else {
-                let available = [];
-                for(let r=0; r<8; r++) {
-                    for(let c=0; c<8; c++) {
-                        if(board[r][c] && board[r][c].color === 'light') {
-                            const p = board[r][c];
-                            const dirs = [[1,-1], [1,1], [-1,-1], [-1,1]];
-                            for(let [dr, dc] of dirs) {
-                                let nR = r+dr, nC = c+dc;
-                                if(nR>=0&&nR<8&&nC>=0&&nC<8 && !board[nR][nC]) {
-                                    if(p.isDamka || dr === 1) available.push({from:{r,c}, to:{r:nR, c:nC}, jumped: false});
-                                }
-                            }
-                        }
-                    }
-                }
-                if(available.length === 0) { alert("Siz yutdingiz!"); return; }
-                move = available[Math.floor(Math.random()*available.length)];
-            }
-            
-            const p = board[move.from.r][move.from.c];
-            if(move.jumped) board[move.vR][move.vC] = null;
-            board[move.from.r][move.from.c] = null;
-            let isDamka = p.isDamka || move.to.r === 7;
-            board[move.to.r][move.to.c] = { color: 'light', isDamka: isDamka };
-            
-            if(move.jumped && getPieceJumps(move.to.r, move.to.c).length > 0) {
-                setTimeout(botMove, 500);
-            } else {
-                turn = 'red';
-            }
-            render();
-        }
-
-        socket.on('move-received', (m) => {
-            if(m.jumped) board[(m.from.r+m.to.r)/2][(m.from.c+m.to.c)/2] = null; // Oddiy urish uchun (Damka urishi signal orqali murakkabroq, bu sodda versiya)
-            board[m.from.r][m.from.c] = null;
-            board[m.to.r][m.to.c] = { color:m.color, isDamka:m.isDamka };
-            turn = (turn === 'red' ? 'light' : 'red');
-            render();
-        });
-
-        function sendMessage() {
-            const input = document.getElementById('chat-input');
-            if(!input.value.trim() || isBotMode) return;
-            socket.emit('chat-message', { roomId: myRoom, text: input.value, sender: myColor });
-            addMsg(input.value, 'me');
-            input.value = '';
-        }
-        socket.on('chat-received', (data) => addMsg(data.text, 'them'));
-        function addMsg(text, side) {
-            const div = document.getElementById('messages');
-            const m = document.createElement('div');
-            m.className = `msg ${side}`;
-            m.innerText = text;
-            div.appendChild(m);
-            div.scrollTop = div.scrollHeight;
+            // Socket orqali serverga yuborish (Sinxronizatsiya uchun)
+            socket.emit('move', { r, c, color: turn });
         }
     </script>
 </body>
