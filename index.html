@@ -3,69 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHASHKA ELITE PRO</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <title>SHASHKA ELITE ONLINE</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --main: #00d2ff; --dark: #0a0f18; --glass: rgba(255,255,255,0.05); }
-        body { margin: 0; background: var(--dark); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        
-        /* AUTH & LOBBY */
-        #auth-screen, #lobby { position: fixed; inset: 0; z-index: 1000; background: var(--dark); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .card { background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--main); width: 90%; max-width: 400px; text-align: center; }
-        
-        /* GAME LAYOUT */
-        #game-screen { display: none; height: 100vh; flex-direction: column; }
-        header { padding: 10px; background: #111; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--main); }
-        
-        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 90vw; height: 90vw; max-width: 500px; max-height: 500px; border: 8px solid #222; }
-        
-        .cell { display: flex; align-items: center; justify-content: center; }
-        .dark-cell { background: #1a1a1a; } .light-cell { background: #e0e0e0; }
-        .piece { width: 85%; height: 85%; border-radius: 50%; position: relative; cursor: pointer; transition: 0.2s; }
-        .red { background: radial-gradient(circle at 30% 30%, #ff5f40, #ff0000); box-shadow: 0 4px 0 #800; }
-        .white { background: radial-gradient(circle at 30% 30%, #fff, #bbb); box-shadow: 0 4px 0 #888; }
+        :root { --accent: #00d2ff; --bg: #050a10; --card: rgba(255,255,255,0.05); }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); color: white; overflow: hidden; height: 100vh; }
+
+        /* KIRISH EKRANI */
+        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid var(--accent); text-align: center; width: 90%; max-width: 400px; box-shadow: 0 0 30px rgba(0,210,255,0.2); }
+
+        /* LOBBY */
+        #lobby { display: none; flex-direction: column; padding: 20px; align-items: center; height: 100vh; overflow-y: auto; }
+        .glass-card { width: 100%; max-width: 450px; background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; text-align: center; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .stat-item { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; }
+        .stat-item b { display: block; color: var(--accent); font-size: 18px; }
+
+        /* O'YIN MAYDONI */
+        #game-screen { display: none; flex-direction: column; height: 100vh; }
+        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 90vw; height: 90vw; max-width: 500px; max-height: 500px; border: 5px solid #222; margin: auto; }
+        .cell { display: flex; align-items: center; justify-content: center; position: relative; }
+        .dark { background: #1a1a1a; } .light { background: #e0e0e0; }
+        .piece { width: 85%; height: 85%; border-radius: 50%; cursor: pointer; position: relative; z-index: 10; transition: 0.2s; }
+        .white { background: radial-gradient(circle at 30% 30%, #fff, #bbb); box-shadow: 0 4px #888; }
+        .red { background: radial-gradient(circle at 30% 30%, #ff5f40, #f00); box-shadow: 0 4px #800; }
         .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
-        .selected { outline: 4px solid var(--main); outline-offset: 2px; }
-        .highlight { background: rgba(0, 210, 255, 0.3) !important; cursor: pointer; }
+        .highlight { background: rgba(0, 210, 255, 0.4) !important; cursor: pointer; }
+        .selected { transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
 
         /* CHAT */
-        #chat-area { height: 150px; background: #000; display: flex; flex-direction: column; }
-        #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 13px; }
-        #chat-input { padding: 10px; background: #111; border: none; color: white; border-top: 1px solid #333; }
-        
+        #chat { height: 150px; background: #000; border-top: 1px solid #333; display: flex; flex-direction: column; }
+        #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 14px; }
+        #chat-input { padding: 12px; background: #111; border: none; color: white; outline: none; }
+
         .btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        .btn-main { background: var(--main); color: #000; width: 100%; margin-top: 10px; }
-        .online-user { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 8px; }
+        .btn-main { background: var(--accent); color: #000; width: 100%; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 8px; }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
-    <div class="card">
-        <h2>SHASHKA ELITE</h2>
-        <input type="text" id="nick" placeholder="Ismingizni kiriting..." style="width:100%; padding:15px; border-radius:10px; border:none; margin-bottom:10px;">
-        <button class="btn btn-main" onclick="login()">KIRISH</button>
+    <div class="auth-card">
+        <h2 style="color:var(--accent)">SHASHKA ELITE</h2>
+        <input type="text" id="nick-input" placeholder="Ismingizni kiriting..." style="width:100%; padding:15px; border-radius:10px; border:1px solid #333; background:#000; color:white; text-align:center; margin-bottom:15px;">
+        <button class="btn btn-main" onclick="joinLobby()">KIRISH</button>
     </div>
 </div>
 
-<div id="lobby" style="display:none;">
-    <div class="card">
-        <h3 id="my-info">PROFILE</h3>
-        <div id="online-list" style="max-height: 200px; overflow-y: auto; text-align: left; margin: 15px 0;"></div>
-        <p style="font-size:12px; color:#666;">Bot bilan o'ynash (Tez kunda...)</p>
+<div id="lobby">
+    <div class="glass-card">
+        <h2 id="my-name" style="margin:0">PLAYER</h2>
+        <div class="stats-grid">
+            <div class="stat-item"><span>Ball</span><b id="my-xp">500</b></div>
+            <div class="stat-item"><span>Yutuq</span><b id="my-wins" style="color:#2ecc71">0</b></div>
+            <div class="stat-item"><span>Mag'lub</span><b id="my-loss" style="color:#e74c3c">0</b></div>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <h3>ONLAYN O'YINCHILAR</h3>
+        <div id="user-list">Hozircha hech kim yo'q...</div>
+    </div>
+
+    <div class="glass-card" style="border-color:#ffd700">
+        <h4 style="color:#ffd700; margin-top:0">BOT BILAN O'YNASH</h4>
+        <div style="display:flex; gap:10px">
+            <button class="btn" style="flex:1; background:#2ecc71" onclick="alert('Tez kunda...')">OSON</button>
+            <button class="btn" style="flex:1; background:#e74c3c" onclick="alert('Tez kunda...')">QIYIN</button>
+        </div>
     </div>
 </div>
 
 <div id="game-screen">
-    <header>
-        <span id="p1-name">SIZ</span>
-        <span id="status" style="color:var(--main)">NAVBT KUTILMOQDA</span>
-        <span id="p2-name">RAQIB</span>
+    <header style="padding:10px; background:#111; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--accent)">
+        <span id="opponent-name">RAQIB KUTILMOQDA</span>
+        <span id="game-status" style="font-weight:bold; color:var(--accent)">SIZNING NAVBATINGIZ</span>
+        <button class="btn" style="background:red; padding:5px 10px; font-size:12px" onclick="location.reload()">CHIQISH</button>
     </header>
-    <div id="board-container"><div id="board"></div></div>
-    <div id="chat-area">
+    <div id="board"></div>
+    <div id="chat">
         <div id="messages"></div>
         <input type="text" id="chat-input" placeholder="Xabar yozing..." onkeypress="if(event.key==='Enter') sendChat()">
     </div>
@@ -73,29 +93,29 @@
 
 <script>
     const socket = io();
-    let myColor = null, roomId = null, turn = 'white';
-    let boardState = []; // 8x8 matrix
-    let selected = null;
+    let myName = "", myColor = null, currentRoom = null, turn = 'white';
+    let boardState = [];
+    let selectedCell = null;
 
-    function login() {
-        const name = document.getElementById('nick').value;
-        if(name.length < 2) return;
-        socket.emit('login', { name });
+    function joinLobby() {
+        const val = document.getElementById('nick-input').value;
+        if(val.length < 2) return;
+        myName = val;
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('lobby').style.display = 'flex';
-        document.getElementById('my-info').innerText = name + " | 🏆 500";
+        document.getElementById('my-name').innerText = myName;
+        socket.emit('login', { name: myName });
     }
 
     socket.on('update-users', (users) => {
-        const list = document.getElementById('online-list');
-        list.innerHTML = "<h4>ONLAYN O'YINCHILAR:</h4>";
-        users.forEach(u => {
-            if(u.id !== socket.id) {
-                list.innerHTML += `<div class="online-user">
-                    <span>${u.name}</span>
-                    <button onclick="socket.emit('send-invite', '${u.id}')" style="background:var(--main); border:none; border-radius:5px; padding:3px 8px;">TAKILF</button>
-                </div>`;
-            }
+        const list = document.getElementById('user-list');
+        const others = users.filter(u => u.id !== socket.id);
+        list.innerHTML = others.length ? "" : "Hech kim yo'q...";
+        others.forEach(u => {
+            list.innerHTML += `<div class="user-row">
+                <span>${u.name} (🏆 ${u.xp})</span>
+                <button class="btn btn-main" style="padding:5px 10px" onclick="socket.emit('send-invite', '${u.id}')">Taklif</button>
+            </div>`;
         });
     });
 
@@ -104,7 +124,7 @@
     });
 
     socket.on('start-game', (data) => {
-        roomId = data.roomId;
+        currentRoom = data.roomId;
         myColor = data.players[socket.id];
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
@@ -117,7 +137,7 @@
             for(let c=0; c<8; c++) {
                 if((r+c)%2 !== 0) {
                     if(r < 3) boardState[r][c] = { color: 'white', damka: false };
-                    else if(r > 4) boardState[r][c] = { color: 'red', damka: false };
+                    if(r > 4) boardState[r][c] = { color: 'red', damka: false };
                 }
             }
         }
@@ -130,53 +150,52 @@
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
                 const cell = document.createElement('div');
-                cell.className = `cell ${(r+c)%2===0 ? 'light-cell' : 'dark-cell'}`;
+                cell.className = `cell ${(r+c)%2===0 ? 'light' : 'dark'}`;
                 const p = boardState[r][c];
                 if(p) {
-                    const pieceDiv = document.createElement('div');
-                    pieceDiv.className = `piece ${p.color} ${p.damka ? 'damka' : ''} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
-                    cell.appendChild(pieceDiv);
+                    const pd = document.createElement('div');
+                    pd.className = `piece ${p.color} ${p.damka ? 'damka' : ''} ${selectedCell?.r==r && selectedCell?.c==c ? 'selected' : ''}`;
+                    cell.appendChild(pd);
                 }
-                cell.onclick = () => handleCellClick(r, c);
+                cell.onclick = () => handleClick(r, c);
                 boardDiv.appendChild(cell);
             }
         }
-        document.getElementById('status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
+        document.getElementById('game-status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIB NAVBATI";
     }
 
-    function handleCellClick(r, c) {
+    function handleClick(r, c) {
         if(turn !== myColor) return;
         const p = boardState[r][c];
         if(p && p.color === myColor) {
-            selected = {r, c};
-        } else if(selected) {
-            // Sodda yurish mantiqi (Urish va qoidalarni shu yerga qo'shish kerak)
-            const moveData = { roomId, from: selected, to: {r, c}, color: myColor };
-            executeMove(moveData);
+            selectedCell = {r, c};
+        } else if(selectedCell) {
+            const moveData = { roomId: currentRoom, from: selectedCell, to: {r, c}, color: myColor };
+            // Sodda yurish mantiqi
+            boardState[r][c] = boardState[selectedCell.r][selectedCell.c];
+            boardState[selectedCell.r][selectedCell.c] = null;
+            if(myColor === 'white' && r === 7) boardState[r][c].damka = true;
+            if(myColor === 'red' && r === 0) boardState[r][c].damka = true;
+            
+            turn = turn === 'white' ? 'red' : 'white';
             socket.emit('make-move', moveData);
-            selected = null;
+            selectedCell = null;
         }
         render();
     }
 
-    function executeMove(data) {
-        const piece = boardState[data.from.r][data.from.c];
-        boardState[data.to.r][data.to.c] = piece;
+    socket.on('move-made', (data) => {
+        boardState[data.to.r][data.to.c] = boardState[data.from.r][data.from.c];
         boardState[data.from.r][data.from.c] = null;
-        // Damka qilish
-        if(data.color === 'white' && data.to.r === 7) piece.damka = true;
-        if(data.color === 'red' && data.to.r === 0) piece.damka = true;
-        turn = turn === 'white' ? 'red' : 'white';
+        turn = data.color === 'white' ? 'red' : 'white';
         render();
-    }
-
-    socket.on('move-made', (data) => executeMove(data));
+    });
 
     function sendChat() {
-        const input = document.getElementById('chat-input');
-        if(!input.value) return;
-        socket.emit('chat-msg', { roomId, text: input.value });
-        input.value = "";
+        const inp = document.getElementById('chat-input');
+        if(!inp.value) return;
+        socket.emit('chat-msg', { roomId: currentRoom, text: inp.value });
+        inp.value = "";
     }
 
     socket.on('new-msg', (data) => {
