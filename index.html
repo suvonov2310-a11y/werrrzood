@@ -2,159 +2,188 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHASHKA ELITE ONLINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHASHKA ELITE PRO</title>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --main: #00d2ff; --bg: #050a10; --glass: rgba(255,255,255,0.05); }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; }
+        :root { --main: #00d2ff; --dark: #0a0f18; --glass: rgba(255,255,255,0.05); }
+        body { margin: 0; background: var(--dark); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
         
-        /* Kirish ekrani */
-        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .auth-box { background: var(--glass); padding: 40px; border-radius: 20px; border: 1px solid var(--main); text-align: center; }
+        /* AUTH & LOBBY */
+        #auth-screen, #lobby { position: fixed; inset: 0; z-index: 1000; background: var(--dark); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .card { background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--main); width: 90%; max-width: 400px; text-align: center; }
         
-        /* Profil va Lobi */
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        .profile-card { background: linear-gradient(45deg, #1a2a3a, #050a10); padding: 20px; border-radius: 15px; border-left: 5px solid var(--main); margin-bottom: 20px; }
-        .stats { display: flex; gap: 20px; margin-top: 10px; font-weight: bold; }
+        /* GAME LAYOUT */
+        #game-screen { display: none; height: 100vh; flex-direction: column; }
+        header { padding: 10px; background: #111; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--main); }
         
-        /* Onlayn o'yinchilar ro'yxati */
-        .online-list { background: var(--glass); border-radius: 15px; padding: 15px; height: 300px; overflow-y: auto; }
-        .user-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 90vw; height: 90vw; max-width: 500px; max-height: 500px; border: 8px solid #222; }
         
-        /* O'yin maydoni va Chat */
-        #game-area { display: none; grid-template-columns: 1fr 300px; gap: 20px; }
-        #board { width: 480px; height: 480px; display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); border: 10px solid #222; }
         .cell { display: flex; align-items: center; justify-content: center; }
-        .dark { background: #1a1a1a; } .light { background: #e0e0e0; }
-        .piece { width: 80%; height: 80%; border-radius: 50%; cursor: pointer; }
-        .red { background: #ff4b2b; box-shadow: 0 4px #900; }
-        .white { background: #fff; box-shadow: 0 4px #999; }
+        .dark-cell { background: #1a1a1a; } .light-cell { background: #e0e0e0; }
+        .piece { width: 85%; height: 85%; border-radius: 50%; position: relative; cursor: pointer; transition: 0.2s; }
+        .red { background: radial-gradient(circle at 30% 30%, #ff5f40, #ff0000); box-shadow: 0 4px 0 #800; }
+        .white { background: radial-gradient(circle at 30% 30%, #fff, #bbb); box-shadow: 0 4px 0 #888; }
+        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
+        .selected { outline: 4px solid var(--main); outline-offset: 2px; }
+        .highlight { background: rgba(0, 210, 255, 0.3) !important; cursor: pointer; }
+
+        /* CHAT */
+        #chat-area { height: 150px; background: #000; display: flex; flex-direction: column; }
+        #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 13px; }
+        #chat-input { padding: 10px; background: #111; border: none; color: white; border-top: 1px solid #333; }
         
-        /* Chat dizayni */
-        .chat-box { background: #111; border-radius: 10px; display: flex; flex-direction: column; height: 480px; }
-        #messages { flex: 1; padding: 10px; overflow-y: auto; font-size: 14px; }
-        #chat-input { padding: 10px; background: #222; border: none; color: white; }
-        
-        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-main { background: var(--main); color: #000; }
-        .btn-bot { background: #ffd700; color: #000; margin-top: 20px; width: 100%; }
+        .btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .btn-main { background: var(--main); color: #000; width: 100%; margin-top: 10px; }
+        .online-user { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
-    <div class="auth-box">
-        <h1>ONLAYN SHASHKA</h1>
-        <input type="text" id="nick" placeholder="Ismingizni kiriting..." style="padding:15px; width:250px; border-radius:10px; border:none; margin-bottom:20px;">
-        <br>
-        <button class="btn btn-main" onclick="startApp()">KIRISH</button>
+    <div class="card">
+        <h2>SHASHKA ELITE</h2>
+        <input type="text" id="nick" placeholder="Ismingizni kiriting..." style="width:100%; padding:15px; border-radius:10px; border:none; margin-bottom:10px;">
+        <button class="btn btn-main" onclick="login()">KIRISH</button>
     </div>
 </div>
 
-<div class="container" id="lobby">
-    <div class="profile-card">
-        <h2 id="my-name">Foydalanuvchi</h2>
-        <div class="stats">
-            <span>🏆 Ball: <span id="my-xp">500</span></span>
-            <span style="color:#2ecc71">W: <span id="my-wins">0</span></span>
-            <span style="color:#e74c3c">L: <span id="my-losses">0</span></span>
-        </div>
+<div id="lobby" style="display:none;">
+    <div class="card">
+        <h3 id="my-info">PROFILE</h3>
+        <div id="online-list" style="max-height: 200px; overflow-y: auto; text-align: left; margin: 15px 0;"></div>
+        <p style="font-size:12px; color:#666;">Bot bilan o'ynash (Tez kunda...)</p>
     </div>
-
-    <h3><i class="fas fa-users"></i> Onlayn o'yinchilar</h3>
-    <div class="online-list" id="user-list"></div>
-
-    <button class="btn btn-bot" onclick="showBotOptions()">🤖 BOT BILAN O'YNASH</button>
 </div>
 
-<div class="container" id="game-area">
-    <div id="board"></div>
-    <div class="chat-box">
-        <div style="padding:10px; border-bottom:1px solid #333">Chat</div>
+<div id="game-screen">
+    <header>
+        <span id="p1-name">SIZ</span>
+        <span id="status" style="color:var(--main)">NAVBT KUTILMOQDA</span>
+        <span id="p2-name">RAQIB</span>
+    </header>
+    <div id="board-container"><div id="board"></div></div>
+    <div id="chat-area">
         <div id="messages"></div>
-        <input type="text" id="chat-input" placeholder="Xabar yozing..." onkeypress="sendChat(event)">
+        <input type="text" id="chat-input" placeholder="Xabar yozing..." onkeypress="if(event.key==='Enter') sendChat()">
     </div>
 </div>
 
 <script>
     const socket = io();
-    let myData = { xp: 500, wins: 0, losses: 0 };
-    let currentRoom = "";
+    let myColor = null, roomId = null, turn = 'white';
+    let boardState = []; // 8x8 matrix
+    let selected = null;
 
-    function startApp() {
+    function login() {
         const name = document.getElementById('nick').value;
-        if(name.length < 2) return alert("Ism kiriting!");
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('my-name').innerText = name;
+        if(name.length < 2) return;
         socket.emit('login', { name });
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('lobby').style.display = 'flex';
+        document.getElementById('my-info').innerText = name + " | 🏆 500";
     }
 
     socket.on('update-users', (users) => {
-        const list = document.getElementById('user-list');
-        list.innerHTML = "";
-        users.forEach(user => {
-            if(user.id !== socket.id) {
-                list.innerHTML += `
-                    <div class="user-item">
-                        <span>${user.name} (${user.xp} ball)</span>
-                        <button class="btn btn-main" onclick="invite('${user.id}')">Taklif qilish</button>
-                    </div>`;
-            } else {
-                document.getElementById('my-xp').innerText = user.xp;
-                document.getElementById('my-wins').innerText = user.wins;
-                document.getElementById('my-losses').innerText = user.losses;
+        const list = document.getElementById('online-list');
+        list.innerHTML = "<h4>ONLAYN O'YINCHILAR:</h4>";
+        users.forEach(u => {
+            if(u.id !== socket.id) {
+                list.innerHTML += `<div class="online-user">
+                    <span>${u.name}</span>
+                    <button onclick="socket.emit('send-invite', '${u.id}')" style="background:var(--main); border:none; border-radius:5px; padding:3px 8px;">TAKILF</button>
+                </div>`;
             }
         });
     });
 
-    function invite(id) {
-        socket.emit('send-invite', { toId: id });
-        alert("Taklif yuborildi, kutilmoqda...");
-    }
-
     socket.on('receive-invite', (data) => {
-        if(confirm(data.fromName + "dan taklif tushdi. Qabul qilasizmi?")) {
-            socket.emit('accept-invite', { fromId: data.fromId });
-        }
+        if(confirm(data.fromName + " bilan o'ynaysizmi?")) socket.emit('accept-invite', data.fromId);
     });
 
     socket.on('start-game', (data) => {
-        currentRoom = data.roomId;
+        roomId = data.roomId;
+        myColor = data.players[socket.id];
         document.getElementById('lobby').style.display = 'none';
-        document.getElementById('game-area').style.display = 'grid';
-        createBoard();
+        document.getElementById('game-screen').style.display = 'flex';
+        initBoard();
     });
 
-    function sendChat(e) {
-        if(e.key === 'Enter') {
-            const text = e.target.value;
-            socket.emit('send-msg', { roomId: currentRoom, text });
-            e.target.value = "";
+    function initBoard() {
+        boardState = Array(8).fill().map(() => Array(8).fill(null));
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                if((r+c)%2 !== 0) {
+                    if(r < 3) boardState[r][c] = { color: 'white', damka: false };
+                    else if(r > 4) boardState[r][c] = { color: 'red', damka: false };
+                }
+            }
         }
+        render();
     }
 
-    socket.on('get-msg', (data) => {
-        const msgDiv = document.getElementById('messages');
-        msgDiv.innerHTML += `<div><b>${data.name}:</b> ${data.text}</div>`;
-        msgDiv.scrollTop = msgDiv.scrollHeight;
-    });
-
-    function createBoard() {
+    function render() {
         const boardDiv = document.getElementById('board');
         boardDiv.innerHTML = "";
-        for(let i=0; i<64; i++) {
-            const row = Math.floor(i/8);
-            const col = i%8;
-            const cell = document.createElement('div');
-            cell.className = `cell ${(row+col)%2===0 ? 'light' : 'dark'}`;
-            // Shashka toshlarini joylash...
-            if((row+col)%2!==0 && row < 3) cell.innerHTML = '<div class="piece white"></div>';
-            if((row+col)%2!==0 && row > 4) cell.innerHTML = '<div class="piece red"></div>';
-            boardDiv.appendChild(cell);
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                const cell = document.createElement('div');
+                cell.className = `cell ${(r+c)%2===0 ? 'light-cell' : 'dark-cell'}`;
+                const p = boardState[r][c];
+                if(p) {
+                    const pieceDiv = document.createElement('div');
+                    pieceDiv.className = `piece ${p.color} ${p.damka ? 'damka' : ''} ${selected?.r===r && selected?.c===c ? 'selected' : ''}`;
+                    cell.appendChild(pieceDiv);
+                }
+                cell.onclick = () => handleCellClick(r, c);
+                boardDiv.appendChild(cell);
+            }
         }
+        document.getElementById('status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
     }
+
+    function handleCellClick(r, c) {
+        if(turn !== myColor) return;
+        const p = boardState[r][c];
+        if(p && p.color === myColor) {
+            selected = {r, c};
+        } else if(selected) {
+            // Sodda yurish mantiqi (Urish va qoidalarni shu yerga qo'shish kerak)
+            const moveData = { roomId, from: selected, to: {r, c}, color: myColor };
+            executeMove(moveData);
+            socket.emit('make-move', moveData);
+            selected = null;
+        }
+        render();
+    }
+
+    function executeMove(data) {
+        const piece = boardState[data.from.r][data.from.c];
+        boardState[data.to.r][data.to.c] = piece;
+        boardState[data.from.r][data.from.c] = null;
+        // Damka qilish
+        if(data.color === 'white' && data.to.r === 7) piece.damka = true;
+        if(data.color === 'red' && data.to.r === 0) piece.damka = true;
+        turn = turn === 'white' ? 'red' : 'white';
+        render();
+    }
+
+    socket.on('move-made', (data) => executeMove(data));
+
+    function sendChat() {
+        const input = document.getElementById('chat-input');
+        if(!input.value) return;
+        socket.emit('chat-msg', { roomId, text: input.value });
+        input.value = "";
+    }
+
+    socket.on('new-msg', (data) => {
+        const m = document.getElementById('messages');
+        m.innerHTML += `<div><b>${data.name}:</b> ${data.text}</div>`;
+        m.scrollTop = m.scrollHeight;
+    });
 </script>
 </body>
 </html>
