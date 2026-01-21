@@ -1,89 +1,79 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const server = http.createServer(app);
+const io = new Server(server);
 
 app.use(express.static(__dirname));
 
-let onlineUsers = {}; 
+// Oddiy ma'lumotlar ombori (Vaqtinchalik)
+let users = {}; 
+let rooms = {};
 
 io.on('connection', (socket) => {
     console.log('Ulandi:', socket.id);
 
-    socket.on('join-lobby', (user) => {
-        // MUHIM: Agar shu foydalanuvchi eski ulanish bilan ro'yxatda bo'lsa, o'chirib tashlaymiz
-        // Bu ismlar ko'payib ketishining oldini oladi
-        for (let sId in onlineUsers) {
-            if (onlineUsers[sId].id === user.id) {
-                delete onlineUsers[sId];
-            }
-        }
-
-        onlineUsers[socket.id] = { 
-            id: user.id, 
-            name: user.name, 
-            socketId: socket.id 
+    // Lobbyga qo'shilish
+    socket.on('join-lobby', (data) => {
+        users[socket.id] = {
+            id: socket.id,
+            name: data.name,
+            xp: 500, // Standart XP
+            wins: 0,
+            losses: 0
         };
-        io.emit('update-users', Object.values(onlineUsers));
+        
+        // Profil ma'lumotlarini qaytarish
+        socket.emit('profile-data', users[socket.id]);
+        
+        // Hammaning ro'yxatini yangilash
+        io.emit('update-users', Object.values(users));
     });
 
+    // Taklif yuborish
     socket.on('send-invite', (data) => {
-        const target = Object.values(onlineUsers).find(u => u.id === data.toId);
-        if (target) {
-            // Taklif aynan maqsadli foydalanuvchining hozirgi socketId siga boradi
-            io.to(target.socketId).emit('receive-invite', data);
-        }
-    });
-
-    socket.on('accept-invite', (data) => {
-        const sender = Object.values(onlineUsers).find(u => u.id === data.fromId);
-        const receiver = onlineUsers[socket.id];
-
-        if (sender && receiver) {
-            const roomId = `room_${Date.now()}`; // Noyob xona ID si
-            
-            const sSocket = io.sockets.sockets.get(sender.socketId);
-            const rSocket = io.sockets.sockets.get(receiver.socketId);
-
-            if(sSocket && rSocket) {
-                sSocket.join(roomId);
-                rSocket.join(roomId);
-
-                const roles = {};
-                roles[sender.id] = 'red';
-                roles[receiver.id] = 'light';
-
-                io.to(roomId).emit('start-game', { roomId, players: roles });
-            }
-        }
-    });
-
-    socket.on('find-random', (userData) => {
-        // O'zidan boshqa onlayn foydalanuvchilarni qidirish
-        const others = Object.values(onlineUsers).filter(u => u.id !== userData.id);
-        if (others.length > 0) {
-            const randomOpponent = others[Math.floor(Math.random() * others.length)];
-            io.to(randomOpponent.socketId).emit('receive-invite', {
-                fromId: userData.id,
-                fromName: userData.name,
-                toId: randomOpponent.id
+        const fromUser = users[socket.id];
+        if (users[data.toId]) {
+            io.to(data.toId).emit('receive-invite', {
+                fromId: socket.id,
+                fromName: fromUser.name
             });
-        } else {
-            socket.emit('status-msg', "Hozircha hech kim yo'q...");
         }
     });
 
-    socket.on('make-move', (data) => {
-        socket.to(data.roomId).emit('move-made', data);
+    // Taklifni qabul qilish va o'yinni boshlash
+    socket.on('accept-invite', (data) => {
+        const roomId = `room_${data.fromId}_${socket.id}`;
+        const players = {};
+        players[data.fromId] = 'red';
+        players[socket.id] = 'white';
+
+        rooms[roomId] = { players, board: null, turn: 'red' };
+
+        io.to(data.fromId).to(socket.id).emit('start-game', {
+            roomId: roomId,
+            players: players
+        });
+    });
+
+    // Chat tizimi
+    socket.on('send-chat', (data) => {
+        socket.to(data.roomId).emit('receive-chat', {
+            sender: users[socket.id].name,
+            msg: data.msg
+        });
     });
 
     socket.on('disconnect', () => {
-        if (onlineUsers[socket.id]) {
-            delete onlineUsers[socket.id];
-            io.emit('update-users', Object.values(onlineUsers));
-        }
+        delete users[socket.id];
+        io.emit('update-users', Object.values(users));
     });
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => console.log(`Server yondi: ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`Elite Server ${PORT}-portda tayyor!`);
+});
