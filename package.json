@@ -1,18 +1,20 @@
 {
-  "name": "shashka-online",
+  "name": "ssh-shashka-online",
   "version": "1.0.0",
-  "description": "Onlayn shashka o'yini",
+  "description": "Professional Online Shashka Game by SSH",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+    "express": "^4.22.1",
+    "mongoose": "^7.8.8",
+    "socket.io": "^4.8.3"
   },
-  "engines": {
-    "node": ">=14.0.0"
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
-  "author": "Sherzod",
+  "author": "SSH Elite",
   "license": "ISC"
 }
