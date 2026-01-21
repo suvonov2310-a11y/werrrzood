@@ -3,209 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHASHKA ELITE | CYBER EDITION</title>
+    <title>SHASHKA ELITE | ONLINE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { 
-            --accent: #00d2ff; 
-            --danger: #ff4b2b; 
-            --gold: #ffd700;
-            --glass: rgba(10, 15, 25, 0.85);
-            --border: rgba(0, 210, 255, 0.3);
-        }
-
+        :root { --accent: #00d2ff; --glass: rgba(10, 15, 25, 0.9); }
+        * { box-sizing: border-box; }
         body { 
-            margin: 0; 
-            color: white;
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            overflow-x: hidden; 
-            height: 100vh;
-            display: flex; 
-            flex-direction: column;
-            /* ORQA FON: Shahar va dasturlash atmosferasi */
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+            margin: 0; color: white; font-family: 'Segoe UI', sans-serif; height: 100vh;
+            display: flex; flex-direction: column; overflow: hidden;
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), 
                         url('https://images.unsplash.com/photo-1510511459019-5dee211c1827?auto=format&fit=crop&w=1000&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-size: cover; background-position: center;
         }
 
-        /* LOBBY KONTEYNERI */
         #lobby { 
-            position: fixed; inset: 0; 
-            z-index: 1500; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 20px; 
-            align-items: center; 
-            overflow-y: auto; 
-            backdrop-filter: blur(10px);
-            padding-bottom: 40px;
+            position: fixed; inset: 0; z-index: 1500; display: flex; 
+            flex-direction: column; padding: 20px; align-items: center; 
+            overflow-y: auto; backdrop-filter: blur(15px);
         }
 
-        /* HAR BIR BO'LIM UCHUN CHIROYLI KARD */
         .glass-card {
-            width: 100%;
-            max-width: 400px;
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 25px; /* Elementlar orasidagi masofa endi katta */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 15px rgba(0,210,255,0.1);
-            text-align: center;
+            width: 100%; max-width: 400px; background: var(--glass);
+            border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 20px;
+            padding: 25px; margin-bottom: 25px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* PROFIL QISMI */
-        .profile-header {
-            position: relative;
-            margin-bottom: 15px;
-        }
         .user-avatar {
-            width: 80px; height: 80px;
-            background: linear-gradient(45deg, var(--accent), #004e92);
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            box-shadow: 0 0 20px var(--accent);
+            width: 70px; height: 70px; background: var(--accent); border-radius: 50%;
+            margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;
+            font-size: 35px; color: #000; box-shadow: 0 0 15px var(--accent);
         }
-        .p-name { font-size: 24px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
 
-        .stats-grid { 
-            display: grid; grid-template-columns: repeat(3, 1fr); 
-            gap: 12px; margin-top: 15px; 
-        }
-        .stat-box { 
-            background: rgba(255,255,255,0.05); 
-            padding: 12px 5px; border-radius: 12px; 
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .stat-box span { font-size: 10px; color: #aaa; display: block; margin-bottom: 5px; text-transform: uppercase; }
-        .stat-box b { font-size: 17px; color: #fff; }
-
-        /* TUGMALAR DIZAYNI */
         .ssh-btn { 
-            width: 100%; padding: 15px; border-radius: 15px; 
-            border: none; cursor: pointer; font-weight: 800;
-            transition: 0.3s; text-transform: uppercase;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 15px; border-radius: 12px; border: none; 
+            font-weight: 800; cursor: pointer; text-transform: uppercase; transition: 0.2s;
         }
-        .btn-green { background: linear-gradient(45deg, #2ecc71, #27ae60); color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
-        .btn-red { background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
-        .btn-invite { background: var(--accent); color: #000; padding: 8px 15px; width: auto; font-size: 11px; border-radius: 10px; }
+        .btn-green { background: #2ecc71; color: white; margin-top: 10px; }
+        .btn-invite { background: var(--accent); color: #000; width: auto; padding: 8px 15px; font-size: 11px; }
 
-        /* MUROJAAT TUGMASI */
-        .tg-section {
-            width: 100%; max-width: 400px;
-            margin-top: 10px;
-        }
-        .tg-link {
-            background: rgba(0, 136, 204, 0.15);
-            border: 1px solid #0088cc;
-            color: #fff;
-            text-decoration: none;
-            display: flex; align-items: center; justify-content: center;
-            gap: 12px; padding: 16px; border-radius: 18px;
-            font-weight: bold; transition: 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .tg-link i { font-size: 20px; color: #0088cc; }
-        .tg-link:active { transform: scale(0.98); background: rgba(0, 136, 204, 0.3); }
-
-        /* O'YIN TARTIBI */
-        header { 
-            padding: 15px 20px; background: var(--glass);
+        .user-row {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px;
         }
-        
-        #game-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; }
+
+        #auth-screen { position: fixed; inset: 0; background: #05070a; z-index: 2000; display: flex; align-items: center; justify-content: center; }
+
+        header { padding: 15px 20px; background: var(--glass); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,210,255,0.3); }
+
         #board {
             display: grid; grid-template-columns: repeat(8, 11vw); grid-template-rows: repeat(8, 11vw);
-            border: 8px solid #1a1e26; border-radius: 10px;
+            border: 8px solid #1a1e26; border-radius: 8px; background: #000;
         }
         @media (min-width: 600px) { #board { grid-template-columns: repeat(8, 50px); grid-template-rows: repeat(8, 50px); } }
 
-        /* AUTH (KIRISH) EKRANI */
-        #auth-screen { position: fixed; inset: 0; background: #05070a; z-index: 2000; display: flex; align-items: center; justify-content: center; }
-        .auth-card { background: var(--glass); padding: 40px 20px; border-radius: 30px; border: 1px solid var(--accent); text-align: center; width: 90%; max-width: 380px; }
-        
+        .cell { display: flex; align-items: center; justify-content: center; }
+        .dark { background: #161b22; } .light { background: #2d333b; }
+        .piece { width: 85%; height: 85%; border-radius: 50%; }
+        .red-p { background: radial-gradient(circle, #ff5f40, #ff0000); box-shadow: 0 4px 0 #800; }
+        .white-p { background: radial-gradient(circle, #ffffff, #a1a1a1); box-shadow: 0 4px 0 #666; }
+
+        .tg-link { color: var(--accent); text-decoration: none; font-weight: bold; border: 1px solid var(--accent); padding: 10px; border-radius: 10px; width: 100%; display: block; }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
-    <div class="auth-card">
-        <div class="user-avatar" style="width:90px; height:90px; font-size:45px;"><i class="fas fa-chess-knight"></i></div>
-        <h2 style="color: var(--accent); letter-spacing: 3px; margin-bottom: 25px;">ELITE SHASHKA</h2>
-        <input type="text" id="username-input" placeholder="Nikingizni yozing..." 
-               style="width:100%; padding:15px; border-radius:12px; border:1px solid #333; background:#000; color:white; margin-bottom:20px; outline:none; text-align:center;">
-        <button class="ssh-btn btn-green" style="background: var(--accent); color:black" onclick="login()">O'YINNI BOSHLASH</button>
+    <div class="glass-card">
+        <div class="user-avatar"><i class="fas fa-chess-knight"></i></div>
+        <h2 style="color: var(--accent); margin-bottom: 25px;">SHASHKA ONLINE</h2>
+        <input type="text" id="username-input" placeholder="Ismingizni yozing..." 
+               style="width:100%; padding:15px; border-radius:10px; border:1px solid #333; background:#000; color:white; text-align:center; outline:none;">
+        <button class="ssh-btn btn-green" onclick="login()">KIRISH</button>
     </div>
 </div>
 
 <div id="lobby" style="display: none;">
-    
     <div class="glass-card">
-        <div class="profile-header">
-            <div class="user-avatar"><i class="fas fa-user-ninja"></i></div>
-            <div class="p-name" id="p-name">PLAYER</div>
-        </div>
-        <div class="stats-grid">
-            <div class="stat-box"><span>Ball</span><b id="st-xp">500</b></div>
-            <div class="stat-box"><span>Yutuq</span><b id="st-wins" style="color:#2ecc71">0</b></div>
-            <div class="stat-box"><span>Mag'lub</span><b id="st-losses" style="color:var(--danger)">0</b></div>
-        </div>
-    </div>
-
-    <div class="glass-card" style="border-color: var(--gold);">
-        <h4 style="margin:0 0 15px 0; color: var(--gold); text-transform: uppercase;"><i class="fas fa-robot"></i> Robot bilan jang</h4>
-        <div style="display: flex; gap: 15px;">
-            <button class="ssh-btn btn-green" onclick="startBotGame('easy')">OSON</button>
-            <button class="ssh-btn btn-red" onclick="startBotGame('hard')">QIYIN</button>
-        </div>
+        <div class="user-avatar"><i class="fas fa-user-ninja"></i></div>
+        <h3 id="p-name" style="margin:0; color:var(--accent);">PLAYER</h3>
+        <p style="margin:5px 0 0 0; font-size:14px; color:#aaa;">Ball: 500</p>
     </div>
 
     <div class="glass-card">
-        <h4 style="margin:0 0 5px 0; color: var(--accent);"><i class="fas fa-globe"></i> Onlayn raqiblar</h4>
-        <p style="font-size: 11px; color: #777; margin-bottom: 15px;">Hozirda faol o'yinchilar ro'yxati</p>
-        <div id="user-list">
-            <div style="color:#444; font-size:12px; padding:10px;">Raqiblar qidirilmoqda...</div>
-        </div>
+        <h4 style="margin:0 0 15px 0; color:var(--accent);"><i class="fas fa-globe"></i> ONLAYN O'YINCHILAR</h4>
+        <div id="user-list">Qidirilmoqda...</div>
     </div>
 
-    <div class="tg-section">
+    <div class="glass-card" style="background:none; border:none; box-shadow:none;">
         <a href="https://t.me/werrrzood" target="_blank" class="tg-link">
-            <i class="fab fa-telegram-plane"></i>
-            ADMINGA MUROJAAT
+            <i class="fab fa-telegram-plane"></i> ADMIN: @werrrzood
         </a>
     </div>
-
 </div>
 
 <header>
-    <div style="font-weight: 900; color: var(--accent); border: 2px solid var(--accent); padding: 3px 8px; border-radius: 5px;">SSH</div>
-    <div id="turn-status" style="font-size:12px; font-weight:bold;">NAVBT KUTILYAPTI...</div>
-    <div style="color: var(--gold); font-weight: bold;"><i class="fas fa-trophy"></i> <span id="xp-display">500</span></div>
+    <div style="font-weight:900; color:var(--accent);">SSH</div>
+    <div id="turn-status" style="font-size:12px; font-weight:bold;">KUTILMOQDA...</div>
+    <div style="color:var(--gold); font-weight:bold;">🏆 500</div>
 </header>
 
-<div id="game-container">
+<div style="flex:1; display:flex; align-items:center; justify-content:center; padding:10px;">
     <div id="board"></div>
 </div>
 
 <script>
-    // Sizning mavjud socket va o'yin mantiqlaringizni bu yerga qo'shing
-    // Login funksiyasida lobby-ni ko'rsatishni unutmang:
+    const socket = io();
+    let myName = "", myColor = null, currentRoom = null;
+
     function login() {
         const input = document.getElementById('username-input');
-        if (input.value.trim().length < 2) return alert("Nik kiriting!");
+        if (input.value.trim().length < 2) return alert("Nik juda qisqa!");
+        myName = input.value.trim();
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('lobby').style.display = 'flex';
-        document.getElementById('p-name').innerText = input.value;
-        // socket.emit...
+        document.getElementById('p-name').innerText = myName;
+        socket.emit('join-lobby', { name: myName });
+    }
+
+    socket.on('update-users', (users) => {
+        const list = document.getElementById('user-list');
+        const others = users.filter(u => u.id !== socket.id);
+        list.innerHTML = others.length ? "" : "<p style='color:#555'>Hech kim yo'q...</p>";
+        others.forEach(u => {
+            list.innerHTML += `<div class="user-row">
+                <span><i class="fas fa-user-circle"></i> ${u.name}</span>
+                <button class="ssh-btn btn-invite" onclick="socket.emit('send-invite', {toId:'${u.id}', fromName:'${myName}'})">TAKLIF</button>
+            </div>`;
+        });
+    });
+
+    socket.on('receive-invite', (data) => {
+        if(confirm(data.fromName + " bilan o'ynaysizmi?")) {
+            socket.emit('accept-invite', { fromId: data.fromId });
+        }
+    });
+
+    socket.on('start-game', (data) => {
+        document.getElementById('lobby').style.display = 'none';
+        currentRoom = data.roomId;
+        myColor = data.players[socket.id];
+        initBoard();
+    });
+
+    function initBoard() {
+        const board = document.getElementById('board');
+        board.innerHTML = "";
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                const cell = document.createElement('div');
+                cell.className = `cell ${(r+c)%2===0 ? 'light' : 'dark'}`;
+                if((r+c)%2 !== 0) {
+                    if(r < 3) cell.innerHTML = '<div class="piece white-p"></div>';
+                    if(r > 4) cell.innerHTML = '<div class="piece red-p"></div>';
+                }
+                board.appendChild(cell);
+            }
+        }
+        document.getElementById('turn-status').innerText = "O'YIN BOSHLANDI!";
     }
 </script>
 </body>
