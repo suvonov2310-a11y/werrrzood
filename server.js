@@ -12,21 +12,17 @@ app.use(express.static(__dirname));
 let users = {};
 
 io.on('connection', (socket) => {
-    // Kirish
     socket.on('login', (userData) => {
         users[socket.id] = { ...userData, id: socket.id };
         io.emit('update-users', Object.values(users));
     });
 
-    // Taklif yuborish
     socket.on('invite-player', (targetId) => {
-        const sender = users[socket.id];
         if (users[targetId]) {
-            io.to(targetId).emit('receive-invite', { fromId: socket.id, name: sender.name });
+            io.to(targetId).emit('receive-invite', { fromId: socket.id, name: users[socket.id].name });
         }
     });
 
-    // Taklif qabul qilinganda o'yinni boshlash
     socket.on('accept-invite', (senderId) => {
         const gameId = `game_${senderId}_${socket.id}`;
         socket.join(gameId);
@@ -37,12 +33,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    // O'yindagi harakatni (yurishni) uzatish
     socket.on('make-move', (data) => {
         socket.to(data.gameId).emit('opponent-moved', data);
     });
 
-    // Chat xabari
     socket.on('send-chat', (data) => {
         socket.to(data.gameId).emit('receive-chat', data);
     });
@@ -53,4 +47,5 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(process.env.PORT || 3000, () => console.log('Server tayyor!'));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`SSH Shashka Server running on port ${PORT}`));
