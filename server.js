@@ -12,11 +12,13 @@ app.use(express.static(__dirname));
 let users = {};
 
 io.on('connection', (socket) => {
+    // Kirish
     socket.on('login', (userData) => {
         users[socket.id] = { ...userData, id: socket.id };
         io.emit('update-users', Object.values(users));
     });
 
+    // Taklif yuborish
     socket.on('invite-player', (targetId) => {
         const sender = users[socket.id];
         if (users[targetId]) {
@@ -24,15 +26,25 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Taklif qabul qilinganda o'yinni boshlash
     socket.on('accept-invite', (senderId) => {
         const gameId = `game_${senderId}_${socket.id}`;
         socket.join(gameId);
-        const senderSocket = io.sockets.sockets.get(senderId);
-        if (senderSocket) {
-            senderSocket.join(gameId);
+        if (io.sockets.sockets.get(senderId)) {
+            io.sockets.sockets.get(senderId).join(gameId);
             io.to(senderId).emit('start-online-game', { color: 'white', opponentName: users[socket.id].name, gameId });
             io.to(socket.id).emit('start-online-game', { color: 'red', opponentName: users[senderId].name, gameId });
         }
+    });
+
+    // O'yindagi harakatni (yurishni) uzatish
+    socket.on('make-move', (data) => {
+        socket.to(data.gameId).emit('opponent-moved', data);
+    });
+
+    // Chat xabari
+    socket.on('send-chat', (data) => {
+        socket.to(data.gameId).emit('receive-chat', data);
     });
 
     socket.on('disconnect', () => {
@@ -41,4 +53,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => console.log('Server 3000-portda ishladi'));
+server.listen(process.env.PORT || 3000, () => console.log('Server tayyor!'));
