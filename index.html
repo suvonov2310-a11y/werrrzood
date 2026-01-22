@@ -3,63 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHASHKA & SHAXMAT ELITE</title>
+    <title>SHASHKA ELITE CLUB</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --accent: #00d2ff; --bg: #050a10; --card: rgba(15, 22, 33, 0.9); --gold: #ffd700; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        
-        body { 
-            margin: 0; 
-            background: #000 url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2071&auto=format&fit=crop') no-repeat center center fixed;
-            background-size: cover;
-            color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
-        }
-
-        .overlay-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: -1; }
-
-        /* AUTH SCREEN */
-        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .auth-card { 
-            background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); 
-            text-align: center; width: 90%; max-width: 420px; box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
-        }
+        body { margin: 0; background: #000 url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2071&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        .overlay-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: -1; }
+        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); text-align: center; width: 90%; max-width: 420px; }
         #nick-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; margin-bottom: 20px; text-align: center; font-size: 16px; }
-
-        /* LOBBY */
         #lobby { display: none; flex-direction: column; padding: 20px; align-items: center; overflow-y: auto; flex: 1; z-index: 10; }
-        .profile-box { background: var(--card); width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-        .avatar-circle { width: 80px; height: 80px; background: linear-gradient(45deg, var(--accent), #004e92); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; }
-        
-        .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; margin-top: 20px; }
-        .mode-card { background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); text-align: center; cursor: pointer; transition: 0.3s; }
-        .mode-card:hover { border-color: var(--accent); transform: translateY(-5px); }
-
-        /* BOARD */
-        #game-screen { display: none; flex-direction: column; height: 100vh; z-index: 100; background: rgba(0,0,0,0.9); }
-        #board { 
-            display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); 
-            width: 95vw; height: 95vw; max-width: 450px; max-height: 450px; 
-            border: 5px solid #222; margin: auto;
-        }
+        .profile-box { background: var(--card); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; }
+        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 95vw; height: 95vw; max-width: 450px; max-height: 450px; border: 5px solid #222; margin: auto; }
         .cell { display: flex; align-items: center; justify-content: center; }
         .dark { background: #1a1a1a; } .light { background: #333; }
-        .piece { width: 85%; height: 85%; border-radius: 50%; cursor: pointer; position: relative; }
+        .piece { width: 85%; height: 85%; border-radius: 50%; cursor: pointer; position: relative; transition: 0.2s; }
         .white-p { background: #eee; box-shadow: inset -5px -5px 10px #999, 0 4px 0 #777; }
         .red-p { background: #f33; box-shadow: inset -5px -5px 10px #800, 0 4px 0 #600; }
         .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
-        .selected { outline: 4px solid var(--accent); box-shadow: 0 0 20px var(--accent); }
-
-        /* CHAT */
-        #chat { height: 150px; background: #050a10; display: flex; flex-direction: column; border-top: 2px solid var(--accent); }
-        #messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 13px; }
-        .msg { margin-bottom: 5px; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 8px; }
-        .chat-input-area { display: flex; padding: 5px; background: #000; }
-        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
-        
-        .btn-main { background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; }
-        .btn-bot { background: #2ecc71; margin-top: 5px; font-size: 12px; padding: 8px; }
+        .selected { outline: 4px solid var(--accent); box-shadow: 0 0 20px var(--accent); transform: scale(1.1); }
+        #game-screen { display: none; flex-direction: column; height: 100vh; background: rgba(0,0,0,0.9); }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(0,210,255,0.1); }
+        .btn-taklif { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -67,62 +34,35 @@
 
 <div id="auth-screen">
     <div class="auth-card">
-        <h1 style="color:var(--accent); margin-bottom:5px;">SHASHKA ELITE</h1>
-        <p style="color:#aaa; font-size:14px; margin-bottom:25px;">Klubga xush kelibsiz, chempion!</p>
-        <input type="text" id="nick-input" placeholder="Taxallusingizni yozing...">
-        <button class="btn-main" onclick="login()">KIRISH</button>
+        <h1 style="color:var(--accent); margin-bottom:10px;">SHASHKA ELITE</h1>
+        <input type="text" id="nick-input" placeholder="Ismingizni yozing...">
+        <button class="btn-main" onclick="login()" style="background:var(--accent); color:#000; width:100%; padding:15px; border-radius:12px; border:none; font-weight:bold; cursor:pointer;">KIRISH</button>
     </div>
 </div>
 
 <div id="lobby">
     <div class="profile-box">
-        <div class="avatar-circle"><i class="fas fa-user-tie"></i></div>
-        <h2 id="p-name" style="margin:0">O'yinchi</h2>
-        <p style="color:var(--accent); margin:5px 0 15px 0;">Reyting: <span id="p-xp">500</span></p>
+        <h2 id="p-name" style="margin:0; color:var(--accent)">O'yinchi</h2>
+        <p>Reyting: <span id="p-xp">500</span></p>
     </div>
-
-    <div class="mode-container">
-        <div class="mode-card" style="grid-column: span 2; border-color: var(--gold);">
-            <h4 style="margin:0; color:var(--gold)"><i class="fas fa-chess"></i> SHAXMAT</h4>
-            <p style="font-size:10px; color:#777;">TEZ KUNDA (YUKLANMOQDA)</p>
-        </div>
-        <div class="mode-card" onclick="alert('Raqibni pastdan tanlang!')">
-            <i class="fas fa-globe" style="font-size:24px; color:var(--accent)"></i>
-            <p style="margin:5px 0 0 0; font-size:12px;">ONLAYN</p>
-        </div>
-        <div class="mode-card">
-            <i class="fas fa-robot" style="font-size:24px; color:#2ecc71"></i>
-            <p style="margin:5px 0 0 0; font-size:12px;">BOT (OFFLINE)</p>
-            <button class="btn-main btn-bot" onclick="startBot('easy')">OSON</button>
-            <button class="btn-main btn-bot" style="background:#f39c12" onclick="startBot('medium')">O'RTA</button>
-        </div>
-    </div>
-
-    <div class="profile-box" style="margin-top:20px; width:100%;">
-        <h4 style="margin:0 0 10px 0; color:var(--accent); text-align:left;"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h4>
-        <div id="user-list">Qidirilmoqda...</div>
+    <div class="profile-box" style="width:100%;">
+        <h4 style="margin:0 0 15px 0; color:var(--accent); text-align:left;"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h4>
+        <div id="user-list">O'yinchilar qidirilmoqda...</div>
     </div>
 </div>
 
 <div id="game-screen">
-    <header style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
-        <span id="opp-name">BOT</span>
-        <span id="game-status">SIZNING NAVBATINGIZ</span>
-        <button onclick="location.reload()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">CHIQUV</button>
+    <header style="padding:15px; display:flex; justify-content:space-between; align-items:center; background:#111;">
+        <span id="opp-name">RAQIB</span>
+        <span id="game-status" style="color:var(--accent)">NAVBT KUTING...</span>
+        <button onclick="location.reload()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">CHIQISH</button>
     </header>
     <div id="board"></div>
-    <div id="chat">
-        <div id="messages"></div>
-        <div class="chat-input-area">
-            <input type="text" id="chat-input" placeholder="Xabar...">
-            <button onclick="sendChat()" style="background:var(--accent); border:none; padding:0 15px;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
 </div>
 
 <script>
     const socket = io();
-    let myColor = 'white', roomId = null, turn = 'white', isBot = false, botLevel = 'easy';
+    let myColor = null, roomId = null, turn = 'white', isMultiJump = false;
     let boardState = Array(8).fill().map(() => Array(8).fill(null));
     let selected = null;
 
@@ -135,23 +75,40 @@
         socket.emit('login', { name: val });
     }
 
-    // BOT BILAN O'YINNI BOSHLASH
-    function startBot(level) {
-        isBot = true;
-        botLevel = level;
-        myColor = 'white';
+    // ONLAYN TAKLIF TIZIMI
+    socket.on('update-users', (users) => {
+        const list = document.getElementById('user-list');
+        const others = users.filter(u => u.id !== socket.id && u.status === 'lobby');
+        list.innerHTML = others.length ? "" : "Hozircha hech kim yo'q...";
+        others.forEach(u => {
+            list.innerHTML += `<div class="user-row">
+                <span>${u.name} (🏆 ${u.xp})</span>
+                <button class="btn-taklif" onclick="socket.emit('send-invite', '${u.id}')">TAKLIF</button>
+            </div>`;
+        });
+    });
+
+    socket.on('receive-invite', (data) => {
+        if(confirm(data.fromName + " sizni jangga chorlayapti! Qabul qilasizmi?")) {
+            socket.emit('accept-invite', data.fromId);
+        }
+    });
+
+    socket.on('start-game', (data) => {
+        roomId = data.roomId;
+        myColor = data.players[socket.id];
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
         initBoard();
-    }
+    });
 
     function initBoard() {
         boardState = Array(8).fill().map(() => Array(8).fill(null));
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
                 if((r+c)%2 !== 0) {
-                    if(r < 3) boardState[r][c] = { color: 'red', damka: false };
-                    else if(r > 4) boardState[r][c] = { color: 'white', damka: false };
+                    if(r < 3) boardState[r][c] = { color: 'white', damka: false };
+                    else if(r > 4) boardState[r][c] = { color: 'red', damka: false };
                 }
             }
         }
@@ -176,9 +133,9 @@
             }
         }
         document.getElementById('game-status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
-        if(isBot && turn !== myColor) setTimeout(botMove, 1000);
     }
 
+    // MULTI-JUMP (SERIYALI URISH) MANTIQI
     function getCaptures(color) {
         let captures = [];
         for(let r=0; r<8; r++) {
@@ -204,7 +161,7 @@
         const p = boardState[r][c];
         const captures = getCaptures(myColor);
 
-        if(p && p.color === myColor) {
+        if(p && p.color === myColor && !isMultiJump) {
             if(captures.length > 0 && !captures.some(cap => cap.from.r === r && cap.from.c === c)) {
                 alert("Majburiy urish bor!"); return;
             }
@@ -216,85 +173,55 @@
             const capture = captures.find(cap => cap.from.r === selected.r && cap.from.c === selected.c && cap.to.r === r && cap.to.c === c);
             
             if(capture) {
-                boardState[capture.mid.r][capture.mid.mc || capture.mid.c] = null;
-                executeMove(selected, {r, c});
-            } else if(captures.length === 0 && Math.abs(dr) === 1 && Math.abs(dc) === 1) {
+                // URISH SODIR BO'LDI
+                boardState[capture.mid.r][capture.mid.c] = null;
+                executeMove(selected, {r, c}, true);
+            } else if(!isMultiJump && captures.length === 0 && Math.abs(dr) === 1 && Math.abs(dc) === 1) {
+                // ODDIY YURISH
                 const piece = boardState[selected.r][selected.c];
-                if(piece.damka || (myColor==='white' && dr===-1) || (myColor==='red' && dr===1)) {
-                    executeMove(selected, {r, c});
+                const forward = (myColor === 'white') ? 1 : -1;
+                if(piece.damka || dr === forward) {
+                    executeMove(selected, {r, c}, false);
                 }
             }
-            selected = null; render();
+            if(!isMultiJump) { selected = null; render(); }
         }
     }
 
-    function executeMove(from, to) {
+    function executeMove(from, to, captured) {
         const p = boardState[from.r][from.c];
         boardState[to.r][to.c] = p;
         boardState[from.r][from.c] = null;
-        if((to.r===0 && p.color==='white') || (to.r===7 && p.color==='red')) p.damka = true;
-        turn = turn === 'white' ? 'red' : 'white';
-        if(!isBot) socket.emit('make-move', { roomId, board: boardState, nextTurn: turn });
-    }
 
-    function botMove() {
-        const caps = getCaptures('red');
-        if(caps.length > 0) {
-            const cap = caps[Math.floor(Math.random()*caps.length)];
-            boardState[cap.mid.r][cap.mid.c] = null;
-            executeMove(cap.from, cap.to);
+        if((to.r===7 && p.color==='white') || (to.r===0 && p.color==='red')) p.damka = true;
+
+        // AGAR URILGAN BO'LSA, YANA URISH MUMKINMI TEKSHIRAMIZ
+        if(captured && canPieceCaptureMore(to.r, to.c)) {
+            isMultiJump = true;
+            selected = {r: to.r, c: to.c};
         } else {
-            let moves = [];
-            for(let r=0; r<8; r++) {
-                for(let c=0; c<8; c++) {
-                    const p = boardState[r][c];
-                    if(p && p.color === 'red') {
-                        [[1,1],[1,-1]].forEach(([dr, dc]) => {
-                            const nr=r+dr, nc=c+dc;
-                            if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc]) moves.push({from:{r,c}, to:{r:nr, c:nc}});
-                        });
-                    }
-                }
-            }
-            if(moves.length > 0) {
-                const m = moves[Math.floor(Math.random()*moves.length)];
-                executeMove(m.from, m.to);
-            }
+            isMultiJump = false;
+            selected = null;
+            turn = turn === 'white' ? 'red' : 'white';
         }
+
+        socket.emit('make-move', { roomId, board: boardState, nextTurn: turn });
         render();
     }
 
-    socket.on('update-users', (users) => {
-        const list = document.getElementById('user-list');
-        list.innerHTML = "";
-        users.filter(u => u.id !== socket.id).forEach(u => {
-            list.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <span>${u.name}</span>
-                <button onclick="socket.emit('send-invite', '${u.id}')" style="background:var(--accent); border:none; border-radius:5px; font-size:10px;">CHORLOV</button>
-            </div>`;
+    function canPieceCaptureMore(r, c) {
+        const directions = [[2,2], [2,-2], [-2,2], [-2,-2]];
+        return directions.some(([dr, dc]) => {
+            const nr = r + dr, nc = c + dc;
+            const mr = r + dr/2, mc = c + dc/2;
+            return nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== myColor;
         });
-    });
-
-    socket.on('start-game', (data) => {
-        isBot = false; roomId = data.roomId; myColor = data.players[socket.id];
-        document.getElementById('lobby').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'flex';
-        initBoard();
-    });
-
-    socket.on('move-made', (data) => { boardState = data.board; turn = data.nextTurn; render(); });
-
-    function sendChat() {
-        const inp = document.getElementById('chat-input');
-        if(!inp.value) return;
-        socket.emit('chat-msg', { roomId, text: inp.value });
-        inp.value = "";
     }
 
-    socket.on('new-msg', (data) => {
-        const m = document.getElementById('messages');
-        m.innerHTML += `<div class="msg"><b>${data.name}:</b> ${data.text}</div>`;
-        m.scrollTop = m.scrollHeight;
+    socket.on('move-made', (data) => {
+        boardState = data.board;
+        turn = data.nextTurn;
+        render();
     });
 </script>
 </body>
