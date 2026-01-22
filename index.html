@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHASHKA ELITE CLUB</title>
+    <title>SHASHKA ELITE PRO</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,9 +13,10 @@
         .overlay-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: -1; }
         #auth-screen { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .auth-card { background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); text-align: center; width: 90%; max-width: 420px; }
-        #nick-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; margin-bottom: 20px; text-align: center; font-size: 16px; }
+        #nick-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; margin-bottom: 20px; text-align: center; }
         #lobby { display: none; flex-direction: column; padding: 20px; align-items: center; overflow-y: auto; flex: 1; z-index: 10; }
         .profile-box { background: var(--card); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; }
+        #game-screen { display: none; flex-direction: column; height: 100vh; background: rgba(0,0,0,0.9); z-index: 100; }
         #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 95vw; height: 95vw; max-width: 450px; max-height: 450px; border: 5px solid #222; margin: auto; }
         .cell { display: flex; align-items: center; justify-content: center; }
         .dark { background: #1a1a1a; } .light { background: #333; }
@@ -23,10 +24,9 @@
         .white-p { background: #eee; box-shadow: inset -5px -5px 10px #999, 0 4px 0 #777; }
         .red-p { background: #f33; box-shadow: inset -5px -5px 10px #800, 0 4px 0 #600; }
         .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
-        .selected { outline: 4px solid var(--accent); box-shadow: 0 0 20px var(--accent); transform: scale(1.1); }
-        #game-screen { display: none; flex-direction: column; height: 100vh; background: rgba(0,0,0,0.9); }
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(0,210,255,0.1); }
-        .btn-taklif { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .selected { outline: 4px solid var(--accent); box-shadow: 0 0 20px var(--accent); }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 5px; }
+        .btn-invite { background: var(--accent); border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -34,26 +34,27 @@
 
 <div id="auth-screen">
     <div class="auth-card">
-        <h1 style="color:var(--accent); margin-bottom:10px;">SHASHKA ELITE</h1>
-        <input type="text" id="nick-input" placeholder="Ismingizni yozing...">
-        <button class="btn-main" onclick="login()" style="background:var(--accent); color:#000; width:100%; padding:15px; border-radius:12px; border:none; font-weight:bold; cursor:pointer;">KIRISH</button>
+        <h1 style="color:var(--accent);">SHASHKA ELITE</h1>
+        <input type="text" id="nick-input" placeholder="Taxallusingizni yozing...">
+        <button class="btn-invite" style="width:100%; padding:15px;" onclick="login()">KIRISH</button>
     </div>
 </div>
 
 <div id="lobby">
     <div class="profile-box">
-        <h2 id="p-name" style="margin:0; color:var(--accent)">O'yinchi</h2>
-        <p>Reyting: <span id="p-xp">500</span></p>
+        <h2 id="p-name" style="margin:0">O'yinchi</h2>
+        <p style="color:var(--accent)">Reyting: <span id="p-xp">500</span></p>
+        <button class="btn-invite" onclick="startBot('easy')" style="background:#2ecc71; margin-top:10px;">BOT BILAN O'YNASH</button>
     </div>
-    <div class="profile-box" style="width:100%;">
-        <h4 style="margin:0 0 15px 0; color:var(--accent); text-align:left;"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h4>
-        <div id="user-list">O'yinchilar qidirilmoqda...</div>
+    <div class="profile-box" style="width:100%">
+        <h4 style="text-align:left; color:var(--accent)"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h4>
+        <div id="user-list">Qidirilmoqda...</div>
     </div>
 </div>
 
 <div id="game-screen">
-    <header style="padding:15px; display:flex; justify-content:space-between; align-items:center; background:#111;">
-        <span id="opp-name">RAQIB</span>
+    <header style="padding:15px; display:flex; justify-content:space-between; background:#111;">
+        <span id="opp-name">BOT</span>
         <span id="game-status" style="color:var(--accent)">NAVBT KUTING...</span>
         <button onclick="location.reload()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">CHIQISH</button>
     </header>
@@ -62,7 +63,7 @@
 
 <script>
     const socket = io();
-    let myColor = null, roomId = null, turn = 'white', isMultiJump = false;
+    let myColor = 'white', roomId = null, turn = 'white', isBot = false, isMultiJump = false;
     let boardState = Array(8).fill().map(() => Array(8).fill(null));
     let selected = null;
 
@@ -78,37 +79,42 @@
     // ONLAYN TAKLIF TIZIMI
     socket.on('update-users', (users) => {
         const list = document.getElementById('user-list');
-        const others = users.filter(u => u.id !== socket.id && u.status === 'lobby');
-        list.innerHTML = others.length ? "" : "Hozircha hech kim yo'q...";
-        others.forEach(u => {
+        list.innerHTML = "";
+        users.filter(u => u.id !== socket.id).forEach(u => {
             list.innerHTML += `<div class="user-row">
-                <span>${u.name} (🏆 ${u.xp})</span>
-                <button class="btn-taklif" onclick="socket.emit('send-invite', '${u.id}')">TAKLIF</button>
+                <span>${u.name}</span>
+                <button class="btn-invite" onclick="socket.emit('send-invite', '${u.id}')">CHORLOV</button>
             </div>`;
         });
     });
 
     socket.on('receive-invite', (data) => {
-        if(confirm(data.fromName + " sizni jangga chorlayapti! Qabul qilasizmi?")) {
+        if(confirm(data.fromName + " sizni o'yinga taklif qildi!")) {
             socket.emit('accept-invite', data.fromId);
         }
     });
 
     socket.on('start-game', (data) => {
-        roomId = data.roomId;
-        myColor = data.players[socket.id];
+        isBot = false; roomId = data.roomId; myColor = data.players[socket.id];
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
         initBoard();
     });
+
+    function startBot(level) {
+        isBot = true; myColor = 'white';
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        initBoard();
+    }
 
     function initBoard() {
         boardState = Array(8).fill().map(() => Array(8).fill(null));
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
                 if((r+c)%2 !== 0) {
-                    if(r < 3) boardState[r][c] = { color: 'white', damka: false };
-                    else if(r > 4) boardState[r][c] = { color: 'red', damka: false };
+                    if(r < 3) boardState[r][c] = { color: 'red', damka: false };
+                    else if(r > 4) boardState[r][c] = { color: 'white', damka: false };
                 }
             }
         }
@@ -133,70 +139,66 @@
             }
         }
         document.getElementById('game-status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
+        if(isBot && turn !== myColor) setTimeout(botMove, 800);
     }
 
-    // MULTI-JUMP (SERIYALI URISH) MANTIQI
-    function getCaptures(color) {
+    // MULTI-JUMP (N TA URISH) TEKSHIRUVI
+    function getCaptures(color, specificPiece = null) {
         let captures = [];
-        for(let r=0; r<8; r++) {
-            for(let c=0; c<8; c++) {
-                const p = boardState[r][c];
-                if(p && p.color === color) {
-                    const directions = [[2,2],[2,-2],[-2,2],[-2,-2]];
-                    directions.forEach(([dr, dc]) => {
-                        const nr = r+dr, nc = c+dc;
-                        const mr = r+dr/2, mc = c+dc/2;
-                        if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== color) {
-                            captures.push({from: {r,c}, to: {r:nr, c:nc}, mid: {r:mr, c:mc}});
-                        }
-                    });
+        const pieces = specificPiece ? [specificPiece] : [];
+        if(!specificPiece) {
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(boardState[r][c]?.color === color) pieces.push({r,c});
                 }
             }
         }
+
+        pieces.forEach(({r, c}) => {
+            const directions = [[2,2],[2,-2],[-2,2],[-2,-2]];
+            directions.forEach(([dr, dc]) => {
+                const nr = r+dr, nc = c+dc, mr = r+dr/2, mc = c+dc/2;
+                if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== color) {
+                    captures.push({from: {r,c}, to: {r:nr, c:nc}, mid: {r:mr, c:mc}});
+                }
+            });
+        });
         return captures;
     }
 
     function handleMove(r, c) {
         if(turn !== myColor) return;
         const p = boardState[r][c];
-        const captures = getCaptures(myColor);
+        const captures = getCaptures(myColor, isMultiJump ? selected : null);
 
         if(p && p.color === myColor && !isMultiJump) {
-            if(captures.length > 0 && !captures.some(cap => cap.from.r === r && cap.from.c === c)) {
-                alert("Majburiy urish bor!"); return;
-            }
             selected = {r, c}; render(); return;
         }
 
         if(selected) {
-            const dr = r - selected.r, dc = c - selected.c;
             const capture = captures.find(cap => cap.from.r === selected.r && cap.from.c === selected.c && cap.to.r === r && cap.to.c === c);
-            
             if(capture) {
-                // URISH SODIR BO'LDI
                 boardState[capture.mid.r][capture.mid.c] = null;
-                executeMove(selected, {r, c}, true);
-            } else if(!isMultiJump && captures.length === 0 && Math.abs(dr) === 1 && Math.abs(dc) === 1) {
-                // ODDIY YURISH
-                const piece = boardState[selected.r][selected.c];
-                const forward = (myColor === 'white') ? 1 : -1;
-                if(piece.damka || dr === forward) {
-                    executeMove(selected, {r, c}, false);
+                movePiece(selected, {r, c}, true);
+            } else if(!isMultiJump && captures.length === 0) {
+                const dr = r - selected.r, dc = c - selected.c;
+                if(Math.abs(dr) === 1 && Math.abs(dc) === 1) {
+                    const piece = boardState[selected.r][selected.c];
+                    if(piece.damka || (myColor==='white' && dr===-1) || (myColor==='red' && dr===1)) {
+                        movePiece(selected, {r, c}, false);
+                    }
                 }
             }
-            if(!isMultiJump) { selected = null; render(); }
         }
     }
 
-    function executeMove(from, to, captured) {
+    function movePiece(from, to, wasCapture) {
         const p = boardState[from.r][from.c];
         boardState[to.r][to.c] = p;
         boardState[from.r][from.c] = null;
+        if((to.r===0 && p.color==='white') || (to.r===7 && p.color==='red')) p.damka = true;
 
-        if((to.r===7 && p.color==='white') || (to.r===0 && p.color==='red')) p.damka = true;
-
-        // AGAR URILGAN BO'LSA, YANA URISH MUMKINMI TEKSHIRAMIZ
-        if(captured && canPieceCaptureMore(to.r, to.c)) {
+        if(wasCapture && getCaptures(p.color, {r: to.r, c: to.c}).length > 0) {
             isMultiJump = true;
             selected = {r: to.r, c: to.c};
         } else {
@@ -204,25 +206,280 @@
             selected = null;
             turn = turn === 'white' ? 'red' : 'white';
         }
-
-        socket.emit('make-move', { roomId, board: boardState, nextTurn: turn });
+        if(!isBot) socket.emit('make-move', { roomId, board: boardState, nextTurn: turn });
         render();
     }
 
-    function canPieceCaptureMore(r, c) {
-        const directions = [[2,2], [2,-2], [-2,2], [-2,-2]];
-        return directions.some(([dr, dc]) => {
-            const nr = r + dr, nc = c + dc;
-            const mr = r + dr/2, mc = c + dc/2;
-            return nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== myColor;
+    // BOT ALGORITMI (KETMA-KET URISH BILAN)
+    function botMove() {
+        let caps = getCaptures('red', isMultiJump ? selected : null);
+        if(caps.length > 0) {
+            const cap = caps[0];
+            boardState[cap.mid.r][cap.mid.c] = null;
+            movePiece(cap.from, cap.to, true);
+        } else {
+            let moves = [];
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    const p = boardState[r][c];
+                    if(p?.color === 'red') {
+                        [[1,1],[1,-1]].forEach(([dr, dc]) => {
+                            const nr=r+dr, nc=c+dc;
+                            if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc]) moves.push({from:{r,c}, to:{r:nr, c:nc}});
+                        });
+                    }
+                }
+            }
+            if(moves.length > 0) {
+                const m = moves[Math.floor(Math.random()*moves.length)];
+                movePiece(m.from, m.to, false);
+            }
+        }
+    }
+
+    socket.on('move-made', (data) => { boardState = data.board; turn = data.nextTurn; render(); });
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHASHKA ELITE PRO</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --accent: #00d2ff; --bg: #050a10; --card: rgba(15, 22, 33, 0.9); --gold: #ffd700; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: #000 url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2071&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        .overlay-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: -1; }
+        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .auth-card { background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); text-align: center; width: 90%; max-width: 420px; }
+        #nick-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; margin-bottom: 20px; text-align: center; }
+        #lobby { display: none; flex-direction: column; padding: 20px; align-items: center; overflow-y: auto; flex: 1; z-index: 10; }
+        .profile-box { background: var(--card); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; }
+        #game-screen { display: none; flex-direction: column; height: 100vh; background: rgba(0,0,0,0.9); z-index: 100; }
+        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 95vw; height: 95vw; max-width: 450px; max-height: 450px; border: 5px solid #222; margin: auto; }
+        .cell { display: flex; align-items: center; justify-content: center; }
+        .dark { background: #1a1a1a; } .light { background: #333; }
+        .piece { width: 85%; height: 85%; border-radius: 50%; cursor: pointer; position: relative; transition: 0.2s; }
+        .white-p { background: #eee; box-shadow: inset -5px -5px 10px #999, 0 4px 0 #777; }
+        .red-p { background: #f33; box-shadow: inset -5px -5px 10px #800, 0 4px 0 #600; }
+        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
+        .selected { outline: 4px solid var(--accent); box-shadow: 0 0 20px var(--accent); }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 5px; }
+        .btn-invite { background: var(--accent); border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="overlay-bg"></div>
+
+<div id="auth-screen">
+    <div class="auth-card">
+        <h1 style="color:var(--accent);">SHASHKA ELITE</h1>
+        <input type="text" id="nick-input" placeholder="Taxallusingizni yozing...">
+        <button class="btn-invite" style="width:100%; padding:15px;" onclick="login()">KIRISH</button>
+    </div>
+</div>
+
+<div id="lobby">
+    <div class="profile-box">
+        <h2 id="p-name" style="margin:0">O'yinchi</h2>
+        <p style="color:var(--accent)">Reyting: <span id="p-xp">500</span></p>
+        <button class="btn-invite" onclick="startBot('easy')" style="background:#2ecc71; margin-top:10px;">BOT BILAN O'YNASH</button>
+    </div>
+    <div class="profile-box" style="width:100%">
+        <h4 style="text-align:left; color:var(--accent)"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h4>
+        <div id="user-list">Qidirilmoqda...</div>
+    </div>
+</div>
+
+<div id="game-screen">
+    <header style="padding:15px; display:flex; justify-content:space-between; background:#111;">
+        <span id="opp-name">BOT</span>
+        <span id="game-status" style="color:var(--accent)">NAVBT KUTING...</span>
+        <button onclick="location.reload()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">CHIQISH</button>
+    </header>
+    <div id="board"></div>
+</div>
+
+<script>
+    const socket = io();
+    let myColor = 'white', roomId = null, turn = 'white', isBot = false, isMultiJump = false;
+    let boardState = Array(8).fill().map(() => Array(8).fill(null));
+    let selected = null;
+
+    function login() {
+        const val = document.getElementById('nick-input').value;
+        if(val.length < 2) return;
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('lobby').style.display = 'flex';
+        document.getElementById('p-name').innerText = val;
+        socket.emit('login', { name: val });
+    }
+
+    // ONLAYN TAKLIF TIZIMI
+    socket.on('update-users', (users) => {
+        const list = document.getElementById('user-list');
+        list.innerHTML = "";
+        users.filter(u => u.id !== socket.id).forEach(u => {
+            list.innerHTML += `<div class="user-row">
+                <span>${u.name}</span>
+                <button class="btn-invite" onclick="socket.emit('send-invite', '${u.id}')">CHORLOV</button>
+            </div>`;
         });
+    });
+
+    socket.on('receive-invite', (data) => {
+        if(confirm(data.fromName + " sizni o'yinga taklif qildi!")) {
+            socket.emit('accept-invite', data.fromId);
+        }
+    });
+
+    socket.on('start-game', (data) => {
+        isBot = false; roomId = data.roomId; myColor = data.players[socket.id];
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        initBoard();
+    });
+
+    function startBot(level) {
+        isBot = true; myColor = 'white';
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        initBoard();
     }
 
-    socket.on('move-made', (data) => {
-        boardState = data.board;
-        turn = data.nextTurn;
+    function initBoard() {
+        boardState = Array(8).fill().map(() => Array(8).fill(null));
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                if((r+c)%2 !== 0) {
+                    if(r < 3) boardState[r][c] = { color: 'red', damka: false };
+                    else if(r > 4) boardState[r][c] = { color: 'white', damka: false };
+                }
+            }
+        }
         render();
-    });
+    }
+
+    function render() {
+        const b = document.getElementById('board');
+        b.innerHTML = "";
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                const cell = document.createElement('div');
+                cell.className = `cell ${(r+c)%2===0 ? 'light' : 'dark'}`;
+                const p = boardState[r][c];
+                if(p) {
+                    const pd = document.createElement('div');
+                    pd.className = `piece ${p.color}-p ${p.damka?'damka':''} ${selected?.r===r&&selected?.c===c?'selected':''}`;
+                    cell.appendChild(pd);
+                }
+                cell.onclick = () => handleMove(r, c);
+                b.appendChild(cell);
+            }
+        }
+        document.getElementById('game-status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
+        if(isBot && turn !== myColor) setTimeout(botMove, 800);
+    }
+
+    // MULTI-JUMP (N TA URISH) TEKSHIRUVI
+    function getCaptures(color, specificPiece = null) {
+        let captures = [];
+        const pieces = specificPiece ? [specificPiece] : [];
+        if(!specificPiece) {
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(boardState[r][c]?.color === color) pieces.push({r,c});
+                }
+            }
+        }
+
+        pieces.forEach(({r, c}) => {
+            const directions = [[2,2],[2,-2],[-2,2],[-2,-2]];
+            directions.forEach(([dr, dc]) => {
+                const nr = r+dr, nc = c+dc, mr = r+dr/2, mc = c+dc/2;
+                if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== color) {
+                    captures.push({from: {r,c}, to: {r:nr, c:nc}, mid: {r:mr, c:mc}});
+                }
+            });
+        });
+        return captures;
+    }
+
+    function handleMove(r, c) {
+        if(turn !== myColor) return;
+        const p = boardState[r][c];
+        const captures = getCaptures(myColor, isMultiJump ? selected : null);
+
+        if(p && p.color === myColor && !isMultiJump) {
+            selected = {r, c}; render(); return;
+        }
+
+        if(selected) {
+            const capture = captures.find(cap => cap.from.r === selected.r && cap.from.c === selected.c && cap.to.r === r && cap.to.c === c);
+            if(capture) {
+                boardState[capture.mid.r][capture.mid.c] = null;
+                movePiece(selected, {r, c}, true);
+            } else if(!isMultiJump && captures.length === 0) {
+                const dr = r - selected.r, dc = c - selected.c;
+                if(Math.abs(dr) === 1 && Math.abs(dc) === 1) {
+                    const piece = boardState[selected.r][selected.c];
+                    if(piece.damka || (myColor==='white' && dr===-1) || (myColor==='red' && dr===1)) {
+                        movePiece(selected, {r, c}, false);
+                    }
+                }
+            }
+        }
+    }
+
+    function movePiece(from, to, wasCapture) {
+        const p = boardState[from.r][from.c];
+        boardState[to.r][to.c] = p;
+        boardState[from.r][from.c] = null;
+        if((to.r===0 && p.color==='white') || (to.r===7 && p.color==='red')) p.damka = true;
+
+        if(wasCapture && getCaptures(p.color, {r: to.r, c: to.c}).length > 0) {
+            isMultiJump = true;
+            selected = {r: to.r, c: to.c};
+        } else {
+            isMultiJump = false;
+            selected = null;
+            turn = turn === 'white' ? 'red' : 'white';
+        }
+        if(!isBot) socket.emit('make-move', { roomId, board: boardState, nextTurn: turn });
+        render();
+    }
+
+    // BOT ALGORITMI (KETMA-KET URISH BILAN)
+    function botMove() {
+        let caps = getCaptures('red', isMultiJump ? selected : null);
+        if(caps.length > 0) {
+            const cap = caps[0];
+            boardState[cap.mid.r][cap.mid.c] = null;
+            movePiece(cap.from, cap.to, true);
+        } else {
+            let moves = [];
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    const p = boardState[r][c];
+                    if(p?.color === 'red') {
+                        [[1,1],[1,-1]].forEach(([dr, dc]) => {
+                            const nr=r+dr, nc=c+dc;
+                            if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc]) moves.push({from:{r,c}, to:{r:nr, c:nc}});
+                        });
+                    }
+                }
+            }
+            if(moves.length > 0) {
+                const m = moves[Math.floor(Math.random()*moves.length)];
+                movePiece(m.from, m.to, false);
+            }
+        }
+    }
+
+    socket.on('move-made', (data) => { boardState = data.board; turn = data.nextTurn; render(); });
 </script>
 </body>
 </html>
