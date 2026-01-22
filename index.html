@@ -4,180 +4,188 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SHASHKA ONLINE - SSH ELITE</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --accent: #00d2ff; --bg: #0b111a; --card: rgba(20, 30, 45, 0.95); --gold: #ffd700; --red: #ff3e3e; --green: #2ecc71; }
-        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background: var(--bg) url('https://images.unsplash.com/photo-1586165368502-1bad197a6461?q=80&w=2000') no-repeat center center fixed; background-size: cover; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .overlay-dark { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: -1; }
-
-        /* HEADER & LOGO */
-        .header-main { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(0,0,0,0.7); border-bottom: 2px solid var(--accent); backdrop-filter: blur(10px); }
-        .logo-ssh { background: var(--accent); color: #000; padding: 5px 12px; border-radius: 8px; font-weight: 900; font-size: 20px; box-shadow: 0 0 15px var(--accent); }
-        .title-top { font-size: 22px; font-weight: bold; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
-
-        /* AVATAR STYLE */
-        .user-profile-head { display: flex; align-items: center; gap: 10px; }
-        .avatar-circle { width: 35px; height: 35px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 18px; border: 2px solid var(--gold); }
-
-        /* LOGIN SCREEN */
-        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .login-box { background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); text-align: center; width: 90%; max-width: 400px; box-shadow: 0 0 40px rgba(0,210,255,0.2); }
-        input { width: 100%; padding: 15px; margin: 20px 0; border-radius: 12px; border: 1px solid #333; background: #000; color: white; font-size: 16px; text-align: center; outline: none; }
-
-        /* LOBBY & PROFILE */
-        #lobby { display: none; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; flex: 1; align-items: center; }
-        .stat-card { background: var(--card); width: 100%; max-width: 450px; border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .stat-item { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; text-align: center; border: 1px solid rgba(0,210,255,0.1); }
+        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
+        body { background: var(--bg); color: white; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* ONLINE LIST */
-        .online-user-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 4px solid var(--green); }
+        /* LOGIN SCREEN */
+        #auth-screen { position: fixed; inset: 0; z-index: 5000; background: radial-gradient(circle, #1a2a40 0%, #0b111a 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-box { background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); text-align: center; width: 90%; max-width: 400px; box-shadow: 0 0 50px rgba(0,210,255,0.3); }
+        .login-box h1 { color: var(--accent); margin-bottom: 10px; font-size: 28px; }
+        input { width: 100%; padding: 15px; margin: 20px 0; border-radius: 12px; border: 1px solid var(--accent); background: #000; color: white; text-align: center; font-size: 18px; outline: none; }
 
-        .btn { border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; text-transform: uppercase; }
-        .btn-green { background: var(--green); } .btn-orange { background: #f39c12; } .btn-red { background: var(--red); }
-        .btn-blue { background: var(--accent); color: #000; width: 100%; }
-        .btn-invite { padding: 6px 15px; font-size: 12px; width: auto; background: var(--accent); color: #000; }
+        /* HEADER */
+        .header-main { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--accent); }
+        .logo-ssh { background: var(--accent); color: #000; padding: 8px 15px; border-radius: 8px; font-weight: 900; font-size: 22px; box-shadow: 0 0 15px var(--accent); }
+        .profile-top { display: flex; align-items: center; gap: 12px; }
+        .avatar-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--accent); background: #222; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--accent); }
+
+        /* LOBBY */
+        #lobby { display: none; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; flex: 1; align-items: center; }
+        .stat-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 20px; border: 1px solid rgba(0,210,255,0.2); text-align: center; }
+        .stat-card b { font-size: 22px; display: block; margin-top: 5px; }
+
+        .online-box { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; padding: 20px; border: 1px solid var(--accent); }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; }
+
+        /* BOT SECTION */
+        .bot-card { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid var(--green); }
+        .bot-img { width: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--green)); }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; }
+
+        /* BUTTONS */
+        .btn { border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; transition: 0.2s; }
+        .btn-blue { background: var(--accent); color: #000; }
+        .btn-green { background: var(--green); }
+        .btn-orange { background: #f39c12; }
+        .btn-red { background: var(--red); }
+        .btn-invite { padding: 6px 12px; font-size: 12px; background: var(--accent); color: #000; }
 
         /* BOARD */
-        #game-screen { display: none; flex-direction: column; height: 100vh; }
-        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 95vw; height: 95vw; max-width: 500px; max-height: 500px; border: 10px solid #222; margin: auto; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        #game-screen { display: none; flex-direction: column; height: 100vh; justify-content: center; align-items: center; }
+        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 95vw; height: 95vw; max-width: 500px; max-height: 500px; border: 8px solid #333; box-shadow: 0 0 40px #000; }
         .cell { display: flex; align-items: center; justify-content: center; }
-        .dark { background: #1a1a1a; } .light { background: #f0f0f0; }
-        .piece { width: 85%; height: 85%; border-radius: 50%; position: relative; cursor: pointer; }
-        .white-p { background: radial-gradient(circle at 30% 30%, #fff, #999); box-shadow: 0 5px 0 #777; }
-        .red-p { background: radial-gradient(circle at 30% 30%, #ff4d4d, #800); box-shadow: 0 5px 0 #600; }
-        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 25px; color: gold; text-shadow: 0 0 5px #000; }
-        .selected { box-shadow: 0 0 20px var(--accent); border: 2px solid white; transform: scale(1.05); }
+        .dark { background: #1a1a1a; } .light { background: #dcdcdc; }
+        .piece { width: 85%; height: 85%; border-radius: 50%; cursor: pointer; position: relative; }
+        .white-p { background: radial-gradient(circle at 30% 30%, #fff, #888); box-shadow: 0 4px 0 #666; }
+        .red-p { background: radial-gradient(circle at 30% 30%, #ff4d4d, #700); box-shadow: 0 4px 0 #500; }
+        .damka::after { content: '👑'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; color: gold; text-shadow: 0 2px 4px #000; }
+        .selected { outline: 4px solid var(--accent); outline-offset: 2px; z-index: 10; }
+        .highlight-move { width: 20px; height: 20px; background: rgba(0, 210, 255, 0.4); border-radius: 50%; pointer-events: none; }
     </style>
 </head>
 <body>
-<div class="overlay-dark"></div>
 
 <div id="auth-screen">
-    <div class="logo-ssh" style="margin-bottom: 20px;">SSH</div>
-    <div class="title-top" style="margin-bottom: 20px;">SHASHKA ONLINE</div>
     <div class="login-box">
-        <i class="fas fa-user-circle" style="font-size: 50px; color: var(--accent);"></i>
-        <h3>XUSH KELIBSIZ</h3>
-        <input type="text" id="nick-input" placeholder="Ismingizni kiriting..." maxlength="15">
-        <button class="btn btn-blue" onclick="register()">RO'YXATDAN O'TISH</button>
+        <div class="logo-ssh" style="display:inline-block; margin-bottom:15px;">SSH</div>
+        <h1>SHASHKA ONLINE</h1>
+        <p>Ismingizni kiriting:</p>
+        <input type="text" id="nick-input" placeholder="User123" maxlength="12">
+        <button class="btn btn-blue" style="width:100%" onclick="register()">KIRISH</button>
     </div>
 </div>
 
-<div class="header-main" id="main-header" style="display:none">
+<div class="header-main" id="top-header" style="display:none">
     <div class="logo-ssh">SSH</div>
-    <div class="user-profile-head">
-        <div id="user-display" style="font-weight:bold; font-size: 14px;">O'yinchi</div>
-        <div class="avatar-circle"><i class="fas fa-user"></i></div>
+    <div style="font-weight:900; letter-spacing:2px; color:var(--accent)">SHASHKA ONLINE</div>
+    <div class="profile-top">
+        <span id="user-display">PLAYER</span>
+        <div class="avatar-img"><i class="fas fa-user"></i></div>
     </div>
 </div>
 
 <div id="lobby">
-    <div class="stat-card">
-        <h2 style="margin:0; color:var(--accent); font-size: 18px;"><i class="fas fa-id-card"></i> SHAXSIY PROFIL</h2>
-        <div class="stats-grid">
-            <div class="stat-item"><small>BALLAR</small><br><b id="u-ball">500</b></div>
-            <div class="stat-item"><small>REYTING</small><br><b id="u-rank">Elite</b></div>
-            <div class="stat-item" style="color:var(--green)"><small>YUTUQLAR</small><br><b id="u-win">0</b></div>
-            <div class="stat-item" style="color:var(--red)"><small>MAG'LUBIYAT</small><br><b id="u-loss">0</b></div>
+    <div class="stat-container">
+        <div class="stat-card">BALLAR <b id="u-ball">500</b></div>
+        <div class="stat-card">RANK <b id="u-rank">Elite</b></div>
+        <div class="stat-card" style="color:var(--green)">YUTUQLAR <b id="u-win">0</b></div>
+        <div class="stat-card" style="color:var(--red)">MAG'LUBIYATLAR <b id="u-loss">0</b></div>
+    </div>
+
+    <div class="online-box">
+        <h3 style="margin-bottom:15px"><i class="fas fa-globe"></i> ONLAYN O'YIN</h3>
+        <div id="online-users-list">
+            <p style="opacity:0.5">O'yinchilar qidirilmoqda...</p>
         </div>
     </div>
 
-    <div class="stat-card">
-        <h3 style="margin:0 0 15px 0; color:var(--accent);"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h3>
-        <div id="online-users-list">
-            </div>
-    </div>
-
-    <div class="stat-card" style="text-align:center">
-        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" style="width:60px; filter: drop-shadow(0 0 10px var(--accent));">
-        <h3 style="margin:10px 0">BOT BILAN JANG</h3>
-        <div class="diff-btns">
+    <div class="bot-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" class="bot-img">
+        <h3>BOT BILAN JANG</h3>
+        <div class="btn-group">
             <button class="btn btn-green" onclick="startBot('easy')">OSON</button>
             <button class="btn btn-orange" onclick="startBot('medium')">O'RTA</button>
             <button class="btn btn-red" onclick="startBot('hard')">QIYIN</button>
         </div>
     </div>
 
-    <button class="btn" style="width:100%; max-width:450px; background:#222; cursor:not-allowed; opacity:0.5; border:1px dashed #444;">SHAXMAT (TEZ KUNDA...)</button>
+    <button class="btn" style="width:100%; max-width:500px; background:#222; color:#555; cursor:not-allowed">SHAXMAT (TEZ KUNDA...)</button>
 </div>
 
 <div id="game-screen">
-    <div class="header-main">
-        <span id="opp-name">RAQIB</span>
+    <div class="header-main" style="width:100%; position:fixed; top:0;">
+        <span id="opp-name">BOT</span>
         <span id="game-status" style="color:var(--accent)">NAVBT SIZDA</span>
-        <button class="btn btn-red" style="padding:5px 15px; font-size:12px;" onclick="location.reload()">CHIQISH</button>
+        <button class="btn btn-red" style="padding:5px 10px" onclick="location.reload()">CHIQISH</button>
     </div>
     <div id="board"></div>
 </div>
 
 <script>
-    let socket;
-    try { socket = io(); } catch(e) { console.log("Offline mode"); }
-
+    const socket = io();
     let user = { name: "", ball: 500, win: 0, loss: 0 };
     let board = Array(8).fill().map(() => Array(8).fill(null));
-    let turn = 'white', myColor = 'white', isBot = false, difficulty = 'easy';
-    let selected = null, mustJump = false;
+    let turn = 'white', myColor = 'white', isBot = false, diff = 'easy';
+    let selected = null, mustJump = false, gameActive = false;
 
+    // 1. REGISTRATSIYA
     function register() {
-        const input = document.getElementById('nick-input').value;
-        if(input.length < 2) return alert("Ismni kiriting!");
-        
-        user.name = input;
-        const saved = localStorage.getItem('ssh_player_' + input);
+        const nick = document.getElementById('nick-input').value.trim();
+        if(nick.length < 2) return alert("Ism juda qisqa!");
+        user.name = nick;
+        const saved = localStorage.getItem('ssh_' + nick);
         if(saved) user = JSON.parse(saved);
-        else user.ball = 500;
-
+        
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('lobby').style.display = 'flex';
-        document.getElementById('main-header').style.display = 'flex';
-        
+        document.getElementById('top-header').style.display = 'flex';
         updateUI();
-        refreshOnlineUsers();
-        
-        if(socket && socket.connected) socket.emit('login', user);
+        socket.emit('login', user);
     }
 
-    function refreshOnlineUsers() {
-        const listEl = document.getElementById('online-users-list');
-        // Simulyatsiya: Haqiqiy server bo'lmaganda o'yinchilarni ko'rsatish
-        listEl.innerHTML = `
-            <div class="online-user-row">
-                <span><i class="fas fa-circle" style="color:var(--green); font-size:10px;"></i> Bekzod_Pro (840)</span>
-                <button class="btn btn-invite" onclick="invite('Bekzod_Pro')">TAKLIF</button>
-            </div>
-            <div class="online-user-row">
-                <span><i class="fas fa-circle" style="color:var(--green); font-size:10px;"></i> Sardor_Elite (1250)</span>
-                <button class="btn btn-invite" onclick="invite('Sardor_Elite')">TAKLIF</button>
-            </div>
-        `;
+    // 2. ONLAYN LIST
+    socket.on('update-users', (users) => {
+        const list = document.getElementById('online-users-list');
+        list.innerHTML = "";
+        users.forEach(u => {
+            if(u.id !== socket.id) {
+                list.innerHTML += `
+                    <div class="user-row">
+                        <span>${u.name} (${u.ball})</span>
+                        <button class="btn btn-invite" onclick="sendInvite('${u.id}')">TAKLIF</button>
+                    </div>`;
+            }
+        });
+        if(list.innerHTML === "") list.innerHTML = "<p style='opacity:0.5'>Boshqa hech kim yo'q...</p>";
+    });
+
+    function sendInvite(id) {
+        socket.emit('invite-player', id);
+        alert("Taklif yuborildi!");
     }
 
-    function invite(name) {
-        alert(name + "ga taklif yuborildi! Qabul qilinishini kuting...");
+    socket.on('receive-invite', (data) => {
+        if(confirm(`${data.name} sizni shashkaga chaqiryapti. Qabul qilasizmi?`)) {
+            socket.emit('accept-invite', data.fromId);
+        }
+    });
+
+    socket.on('start-online-game', (data) => {
+        isBot = false; myColor = data.color;
+        document.getElementById('opp-name').innerText = data.opponentName;
+        startGameUI();
+    });
+
+    // 3. O'YIN LOGIKASI
+    function startBot(d) {
+        isBot = true; diff = d; myColor = 'white';
+        document.getElementById('opp-name').innerText = "BOT (" + d + ")";
+        startGameUI();
     }
 
-    function updateUI() {
-        document.getElementById('u-ball').innerText = user.ball;
-        document.getElementById('u-win').innerText = user.win;
-        document.getElementById('u-loss').innerText = user.loss;
-        document.getElementById('user-display').innerText = user.name.toUpperCase();
-        localStorage.setItem('ssh_player_' + user.name, JSON.stringify(user));
-    }
-
-    function startBot(diff) {
-        isBot = true; difficulty = diff;
-        myColor = 'white'; turn = 'white';
-        document.getElementById('opp-name').innerText = "BOT (" + diff.toUpperCase() + ")";
+    function startGameUI() {
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
-        initGame();
+        gameActive = true;
+        initBoard();
     }
 
-    function initGame() {
+    function initBoard() {
         board = Array(8).fill().map(() => Array(8).fill(null));
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
@@ -191,10 +199,10 @@
     }
 
     function render() {
-        const boardEl = document.getElementById('board');
-        boardEl.innerHTML = "";
-        const jumps = getAllJumps(turn);
-        mustJump = jumps.length > 0;
+        const bEl = document.getElementById('board');
+        bEl.innerHTML = "";
+        const allJumps = getAllJumps(turn);
+        mustJump = allJumps.length > 0;
 
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
@@ -202,132 +210,147 @@
                 cell.className = `cell ${(r+c)%2===0 ? 'light' : 'dark'}`;
                 const p = board[r][c];
                 if(p) {
-                    const pd = document.createElement('div');
-                    pd.className = `piece ${p.color}-p ${p.damka?'damka':''} ${selected?.r===r&&selected?.c===c?'selected':''}`;
-                    cell.appendChild(pd);
+                    const div = document.createElement('div');
+                    div.className = `piece ${p.color}-p ${p.damka?'damka':''} ${selected?.r===r && selected?.c===c ? 'selected':''}`;
+                    cell.appendChild(div);
                 }
-                cell.onclick = () => handleCellClick(r, c);
-                boardEl.appendChild(cell);
+                cell.onclick = () => handleCell(r, c);
+                bEl.appendChild(cell);
             }
         }
         document.getElementById('game-status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
-        if(isBot && turn !== myColor) setTimeout(botLogic, 800);
+        if(isBot && turn !== myColor) setTimeout(botMove, 800);
     }
 
-    function handleCellClick(r, c) {
-        if(turn !== myColor) return;
+    function handleCell(r, c) {
+        if(turn !== myColor || !gameActive) return;
         const p = board[r][c];
-
         if(p && p.color === myColor) {
+            if(mustJump && getJumps(r, c).length === 0) return;
             selected = {r, c}; render();
         } else if(selected) {
-            const jumps = getPieceJumps(selected.r, selected.c);
+            const jumps = getJumps(selected.r, selected.c);
             const jump = jumps.find(j => j.to.r === r && j.to.c === c);
-            if(jump) applyMove(selected, {r, c}, jump.mid);
-            else if(!mustJump) {
-                const moves = getPieceMoves(selected.r, selected.c);
-                if(moves.find(m => m.r === r && m.c === c)) applyMove(selected, {r, c}, null);
+            if(jump) {
+                executeMove(selected, {r, c}, jump.mids);
+            } else if(!mustJump) {
+                const moves = getMoves(selected.r, selected.c);
+                if(moves.some(m => m.r === r && m.c === c)) executeMove(selected, {r, c}, null);
             }
         }
     }
 
-    function applyMove(from, to, mid) {
+    function executeMove(from, to, mids) {
         const p = board[from.r][from.c];
         board[to.r][to.c] = p;
         board[from.r][from.c] = null;
-        if(mid) mid.forEach(m => board[m.r][m.c] = null);
+        if(mids) mids.forEach(m => board[m.r][m.c] = null);
+
         if((to.r === 0 && p.color === 'white') || (to.r === 7 && p.color === 'red')) p.damka = true;
-        if(mid && getPieceJumps(to.r, to.c).length > 0) {
+
+        if(mids && getJumps(to.r, to.c).length > 0) {
             selected = {r: to.r, c: to.c}; mustJump = true;
         } else {
-            selected = null; turn = (turn === 'white' ? 'red' : 'white');
+            selected = null; turn = turn === 'white' ? 'red' : 'white';
         }
-        checkGameOver(); render();
+        checkEnd(); render();
     }
 
-    function getPieceJumps(r, c) {
+    // 4. DAMKA VA ODDIY QOIDALAR (n-taga urish)
+    function getJumps(r, c) {
         const p = board[r][c];
-        const jumps = [];
-        const dirs = [[1,1],[1,-1],[-1,1],[-1,-1]];
+        const res = [];
+        const dirs = [[1,1], [1,-1], [-1,1], [-1,-1]];
         if(!p.damka) {
             dirs.forEach(([dr, dc]) => {
                 const nr = r+dr*2, nc = c+dc*2, mr = r+dr, mc = c+dc;
                 if(nr>=0 && nr<8 && nc>=0 && nc<8 && !board[nr][nc] && board[mr][mc] && board[mr][mc].color !== p.color) {
-                    jumps.push({to: {r:nr, c:nc}, mid: [{r:mr, c:mc}]});
+                    res.push({to: {r:nr, c:nc}, mids: [{r:mr, c:mc}]});
                 }
             });
         } else {
             dirs.forEach(([dr, dc]) => {
-                let r2 = r+dr, c2 = c+dc, mid = null;
-                while(r2+dr>=0 && r2+dr<8 && c2+dc>=0 && c2+dc<8) {
+                let r2 = r+dr, c2 = c+dc, foundMid = null;
+                while(r2>=0 && r2<8 && c2>=0 && c2<8) {
                     if(board[r2][c2]) {
-                        if(board[r2][c2].color !== p.color && !board[r2+dr][c2+dc]) {
-                            mid = {r:r2, c:c2};
-                            let r3 = r2+dr, c3 = c2+dc;
-                            while(r3>=0 && r3<8 && c3>=0 && c3<8 && !board[r3][c3]) {
-                                jumps.push({to: {r:r3, c:c3}, mid: [mid]});
-                                r3 += dr; c3 += dc;
-                            }
-                        }
-                        break;
+                        if(board[r2][c2].color !== p.color && !foundMid) foundMid = {r:r2, c:c2};
+                        else break;
+                    } else if(foundMid) {
+                        res.push({to: {r:r2, c:c2}, mids: [foundMid]});
                     }
                     r2 += dr; c2 += dc;
                 }
             });
         }
-        return jumps;
+        return res;
     }
 
-    function getPieceMoves(r, c) {
+    function getMoves(r, c) {
         const p = board[r][c];
-        const moves = [];
-        const dirs = p.damka ? [[1,1],[1,-1],[-1,1],[-1,-1]] : (p.color === 'white' ? [[-1,1],[-1,-1]] : [[1,1],[1,-1]]);
+        const res = [];
+        const dirs = p.damka ? [[1,1], [1,-1], [-1,1], [-1,-1]] : (p.color === 'white' ? [[-1,1],[-1,-1]] : [[1,1], [1,-1]]);
         dirs.forEach(([dr, dc]) => {
             let nr = r+dr, nc = c+dc;
             if(!p.damka) {
-                if(nr>=0 && nr<8 && nc>=0 && nc<8 && !board[nr][nc]) moves.push({r:nr, c:nc});
+                if(nr>=0 && nr<8 && nc>=0 && nc<8 && !board[nr][nc]) res.push({r:nr, c:nc});
             } else {
                 while(nr>=0 && nr<8 && nc>=0 && nc<8 && !board[nr][nc]) {
-                    moves.push({r:nr, c:nc});
+                    res.push({r:nr, c:nc});
                     nr += dr; nc += dc;
                 }
             }
         });
-        return moves;
+        return res;
     }
 
     function getAllJumps(color) {
         let all = [];
-        for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(board[r][c]?.color === color) all = all.concat(getPieceJumps(r, c));
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(board[r][c]?.color === color) all = all.concat(getJumps(r, c));
         return all;
     }
 
-    function botLogic() {
-        const jumps = getAllJumps('red');
-        if(jumps.length > 0) {
-            const j = jumps[0];
-            for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
-                if(board[r][c]?.color==='red' && getPieceJumps(r,c).some(x => x.to.r===j.to.r)) { applyMove({r,c}, j.to, j.mid); return; }
-            }
+    function botMove() {
+        const js = getAllJumps('red');
+        if(js.length > 0) {
+            const j = js[Math.floor(Math.random()*js.length)];
+            let fr, fc;
+            for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(board[r][c]?.color==='red' && getJumps(r,c).some(x=>x.to.r===j.to.r && x.to.c===j.to.c)) {fr=r; fc=c;}
+            executeMove({r:fr, c:fc}, j.to, j.mids);
         } else {
-            let all = [];
-            for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(board[r][c]?.color==='red') getPieceMoves(r,c).forEach(m=>all.push({from:{r,c},to:m}));
-            if(all.length > 0) {
-                let move = (difficulty==='hard') ? all.sort((a,b)=>b.to.r-a.to.r)[0] : all[Math.floor(Math.random()*all.length)];
-                applyMove(move.from, move.to, null);
+            let ms = [];
+            for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(board[r][c]?.color==='red') getMoves(r,c).forEach(m=>ms.push({f:{r,c}, t:m}));
+            if(ms.length > 0) {
+                const move = diff === 'hard' ? ms.sort((a,b)=>b.t.r - a.t.r)[0] : ms[Math.floor(Math.random()*ms.length)];
+                executeMove(move.f, move.t, null);
             }
         }
     }
 
-    function checkGameOver() {
-        let w=0, r=0; board.flat().forEach(p=>{if(p?.color==='white')w++; if(p?.color==='red')r++;});
-        if(w===0) endGame(false); else if(r===0) endGame(true);
+    function checkEnd() {
+        let w=0, r=0;
+        board.flat().forEach(p => { if(p?.color==='white') w++; if(p?.color==='red') r++; });
+        if(w === 0) finish(false); else if(r === 0) finish(true);
     }
 
-    function endGame(isWin) {
-        if(isWin) { let a=Math.floor(Math.random()*11)+35; user.ball+=a; user.win++; alert("G'ALABA! +"+a+" ball"); }
-        else { user.ball-=25; user.loss++; alert("MAG'LUBIYAT! -25 ball"); }
+    function finish(win) {
+        gameActive = false;
+        if(win) {
+            const b = Math.floor(Math.random()*(45-35+1))+35;
+            user.ball += b; user.win++;
+            alert(`G'ALABA! +${b} ball berildi.`);
+        } else {
+            user.ball -= 25; user.loss++;
+            alert(`MAG'LUBIYAT! 25 ball olib tashlandi.`);
+        }
         updateUI(); location.reload();
+    }
+
+    function updateUI() {
+        document.getElementById('u-ball').innerText = user.ball;
+        document.getElementById('u-win').innerText = user.win;
+        document.getElementById('u-loss').innerText = user.loss;
+        document.getElementById('user-display').innerText = user.name.toUpperCase();
+        localStorage.setItem('ssh_' + user.name, JSON.stringify(user));
     }
 </script>
 </body>
