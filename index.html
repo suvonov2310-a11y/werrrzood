@@ -3,164 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SHASHKA ELITE PRO</title>
+    <title>SHASHKA ELITE PRO - REYTING</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --accent: #00d2ff; --bg: #050a10; --card: rgba(15, 22, 33, 0.9); --gold: #ffd700; }
+        :root { --accent: #00d2ff; --bg: #050a10; --card: rgba(15, 22, 33, 0.95); --gold: #ffd700; --red: #ff4757; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; background: #000 url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2071&auto=format&fit=crop') no-repeat center center fixed; background-size: cover; color: white; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-        .overlay-bg { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: -1; }
         
-        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .auth-card { background: var(--card); padding: 40px; border-radius: 30px; border: 2px solid var(--accent); text-align: center; width: 90%; max-width: 420px; box-shadow: 0 0 30px rgba(0,210,255,0.2); }
+        /* AUTH & LOBBY */
+        #auth-screen { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
+        .card { background: var(--card); padding: 30px; border-radius: 25px; border: 1px solid var(--accent); width: 90%; max-width: 450px; text-align: center; }
         
-        #nick-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: white; margin-bottom: 20px; text-align: center; font-size: 1.1rem; outline: none; border: 1px solid var(--accent); }
+        #lobby { display: none; flex-direction: column; padding: 20px; align-items: center; overflow-y: auto; flex: 1; z-index: 10; gap: 15px; }
         
-        #lobby { display: none; flex-direction: column; padding: 20px; align-items: center; overflow-y: auto; flex: 1; z-index: 10; }
-        .profile-box { background: var(--card); width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; }
+        /* PROFIL QISMI */
+        .profile-container { background: linear-gradient(145deg, #101a26, #050a10); width: 100%; border-radius: 20px; padding: 20px; border: 1px solid rgba(0,210,255,0.3); position: relative; }
+        .avatar-box { width: 70px; height: 70px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 30px; color: #000; border: 3px solid var(--gold); }
+        .xp-bar { width: 100%; height: 10px; background: #222; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+        .xp-fill { height: 100%; background: var(--gold); width: 0%; transition: 0.5s; }
         
+        /* O'YIN DARAJALARI */
+        .difficulty-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-diff { padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .easy { background: #2ecc71; color: white; }
+        .pro { background: #e74c3c; color: white; }
+
+        /* DOSKA */
         #game-screen { display: none; flex-direction: column; height: 100vh; background: rgba(0,0,0,0.9); z-index: 100; }
-        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 90vw; height: 90vw; max-width: 450px; max-height: 450px; border: 8px solid #222; margin: auto; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        
-        .cell { display: flex; align-items: center; justify-content: center; position: relative; }
-        .dark { background: #1a1a1a; } 
-        .light { background: #444; }
-        
-        .piece { width: 80%; height: 80%; border-radius: 50%; cursor: pointer; position: relative; z-index: 5; transition: transform 0.2s; }
+        #board { display: grid; grid-template: repeat(8, 1fr) / repeat(8, 1fr); width: 95vw; height: 95vw; max-width: 450px; max-height: 450px; border: 6px solid #333; margin: auto; }
+        .cell { display: flex; align-items: center; justify-content: center; }
+        .dark { background: #1a1a1a; } .light { background: #333; }
+        .piece { width: 80%; height: 80%; border-radius: 50%; position: relative; transition: 0.2s; cursor: pointer; }
         .white-p { background: radial-gradient(circle at 30% 30%, #fff, #999); box-shadow: 0 4px 0 #666; }
         .red-p { background: radial-gradient(circle at 30% 30%, #ff4d4d, #800); box-shadow: 0 4px 0 #500; }
-        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: gold; text-shadow: 0 0 5px black; }
-        
-        .selected { transform: scale(1.1); outline: 3px solid var(--accent); box-shadow: 0 0 15px var(--accent) !important; }
-        .btn-action { background: var(--accent); border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #000; transition: 0.3s; width: 100%; margin-top: 10px; }
-        .btn-action:hover { opacity: 0.8; transform: translateY(-2px); }
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .damka::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; color: gold; }
+        .selected { outline: 4px solid var(--accent); transform: scale(1.1); }
     </style>
 </head>
 <body>
-<div class="overlay-bg"></div>
 
 <div id="auth-screen">
-    <div class="auth-card">
-        <h1 style="color:var(--accent); margin-bottom: 20px;">SHASHKA ELITE</h1>
-        <p style="color: #ccc; margin-bottom: 20px;">Ismingizni kiriting va boshlang</p>
-        <input type="text" id="nick-input" placeholder="Taxallusingiz..." autocomplete="off">
-        <button class="btn-action" onclick="login()">O'YINGA KIRISH</button>
+    <div class="card">
+        <h1 style="color:var(--accent)">ELITE SHASHKA</h1>
+        <input type="text" id="nick-input" placeholder="Ismingiz..." style="width:100%; padding:15px; border-radius:10px; background:#000; color:white; border:1px solid #444; margin-bottom:15px;">
+        <button onclick="login()" style="width:100%; padding:15px; background:var(--accent); border:none; border-radius:10px; font-weight:bold;">TIZIMGA KIRISH</button>
     </div>
 </div>
 
 <div id="lobby">
-    <div class="profile-box">
-        <h2 id="p-name" style="margin:0">O'yinchi</h2>
-        <p style="color:var(--accent)">Reyting: <span id="p-xp">500</span></p>
-        <button class="btn-action" onclick="startBot('easy')" style="background:#2ecc71;">BOT BILAN O'YNASH</button>
+    <div class="profile-container">
+        <div class="avatar-box"><i class="fas fa-user-shield"></i></div>
+        <h2 id="p-name" style="margin:5px 0">O'yinchi</h2>
+        <div style="display:flex; justify-content:space-between; font-size:14px; color:var(--accent);">
+            <span>Daraja: <b id="p-lvl">1</b></span>
+            <span>Reyting: <b id="p-xp">500</b></span>
+        </div>
+        <div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div>
+        <p style="font-size:12px; color:#666; margin-top:5px;">Keyingi darajagacha: <span id="xp-needed">100</span> XP</p>
     </div>
-    
-    <div class="profile-box" style="width:100%">
-        <h4 style="text-align:left; color:var(--accent); margin-top:0;"><i class="fas fa-users"></i> ONLAYN O'YINCHILAR</h4>
-        <div id="user-list" style="color:#777; font-size: 0.9rem;">Serverga ulanmoqda...</div>
+
+    <div class="profile-container">
+        <h4 style="margin:0; color:var(--accent)"><i class="fas fa-robot"></i> BOT BILAN JANG</h4>
+        <div class="difficulty-grid">
+            <button class="btn-diff easy" onclick="startBot('easy')">OSON</button>
+            <button class="btn-diff pro" onclick="startBot('pro')">PRO (AQLLI)</button>
+        </div>
+    </div>
+
+    <div class="profile-container" style="flex:1">
+        <h4 style="margin:0 0 10px 0; color:var(--accent)"><i class="fas fa-globe"></i> ONLAYN O'YINCHILAR</h4>
+        <div id="user-list" style="color:#555">Qidirilmoqda...</div>
     </div>
 </div>
 
 <div id="game-screen">
-    <header style="padding:15px; display:flex; justify-content:space-between; background:#111; align-items:center; border-bottom: 2px solid var(--accent);">
-        <span id="opp-name" style="font-weight:bold;">RAQIB</span>
-        <span id="game-status" style="color:var(--accent); font-size:0.9rem;">NAVBT...</span>
-        <button onclick="location.reload()" style="background:#ff4757; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">CHIQUV</button>
-    </header>
+    <div style="padding:15px; display:flex; justify-content:space-between; background:#111; border-bottom:1px solid var(--accent)">
+        <div><i class="fas fa-user"></i> <span id="opp-display">BOT</span></div>
+        <div id="game-status" style="color:var(--accent)">NAVBT KUTING...</div>
+        <button onclick="location.reload()" style="background:var(--red); border:none; color:white; padding:5px 10px; border-radius:5px;">CHIQISH</button>
+    </div>
     <div id="board"></div>
 </div>
 
 <script>
-    // Socket xatolarni ushlash
-    let socket;
-    try {
-        socket = io();
-    } catch(e) {
-        console.log("Socket server topilmadi, offline rejim.");
-    }
-
-    let myColor = 'white', roomId = null, turn = 'white', isBot = false, isMultiJump = false;
+    let userData = { name: "", xp: 500, lvl: 1 };
+    let botLevel = 'easy';
+    let myColor = 'white', turn = 'white', isBot = false, isMultiJump = false;
     let boardState = Array(8).fill().map(() => Array(8).fill(null));
     let selected = null;
 
+    // LOGIN VA PROFILNI YUKLASH
     function login() {
         const val = document.getElementById('nick-input').value;
-        if(val.length < 2) {
-            alert("Ism juda qisqa!");
-            return;
-        }
+        if(val.length < 2) return;
+        userData.name = val;
         
-        // Ekranni o'zgartirish (Bu qism ishlayotganiga amin bo'lamiz)
+        // LocalStorage dan eski ma'lumotlarni olish
+        const saved = localStorage.getItem('shashka_user_' + val);
+        if(saved) userData = JSON.parse(saved);
+
+        updateProfileUI();
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('lobby').style.display = 'flex';
-        document.getElementById('p-name').innerText = val;
-        
-        // Agar socket bo'lsa, serverga bildiramiz
-        if(socket && socket.connected) {
-            socket.emit('login', { name: val });
-        } else {
-            document.getElementById('user-list').innerText = "Onlayn rejim uchun server ulanmagan.";
-        }
     }
 
-    // ONLAYN FUNKSIYALAR
-    if(socket) {
-        socket.on('update-users', (users) => {
-            const list = document.getElementById('user-list');
-            const otherUsers = users.filter(u => u.id !== socket.id);
-            if(otherUsers.length === 0) {
-                list.innerText = "Hozircha hech kim yo'q...";
-                return;
-            }
-            list.innerHTML = "";
-            otherUsers.forEach(u => {
-                list.innerHTML += `<div class="user-row">
-                    <span>${u.name}</span>
-                    <button class="btn-action" style="width:auto; margin:0; padding:5px 10px; font-size:0.8rem;" onclick="sendInvite('${u.id}')">TAKLIF</button>
-                </div>`;
-            });
-        });
-
-        socket.on('receive-invite', (data) => {
-            if(confirm(data.fromName + " taklif yubordi. Qabul qilasizmi?")) {
-                socket.emit('accept-invite', data.fromId);
-            }
-        });
-
-        socket.on('start-game', (data) => {
-            isBot = false; roomId = data.roomId; myColor = data.players[socket.id];
-            document.getElementById('opp-name').innerText = "ONLAYN RAQIB";
-            startGameUI();
-        });
-        
-        socket.on('move-made', (data) => { 
-            boardState = data.board; 
-            turn = data.nextTurn; 
-            render(); 
-        });
-    }
-
-    function sendInvite(id) {
-        socket.emit('send-invite', id);
-        alert("Taklif yuborildi, kuting...");
+    function updateProfileUI() {
+        document.getElementById('p-name').innerText = userData.name;
+        document.getElementById('p-xp').innerText = userData.xp;
+        document.getElementById('p-lvl').innerText = Math.floor(userData.xp / 500) + 1;
+        const progress = (userData.xp % 500) / 5;
+        document.getElementById('xp-fill').style.width = progress + "%";
+        document.getElementById('xp-needed').innerText = 500 - (userData.xp % 500);
+        localStorage.setItem('shashka_user_' + userData.name, JSON.stringify(userData));
     }
 
     function startBot(level) {
-        isBot = true; 
-        myColor = 'white'; 
-        turn = 'white';
-        document.getElementById('opp-name').innerText = "KOMPYUTER (BOT)";
-        startGameUI();
-    }
-
-    function startGameUI() {
+        botLevel = level;
+        isBot = true;
+        myColor = 'white';
+        document.getElementById('opp-display').innerText = "BOT (" + level.toUpperCase() + ")";
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-screen').style.display = 'flex';
         initBoard();
     }
 
+    // O'YIN MEXANIKASI (SODDALASHTIRILGAN REPRODUCTION)
     function initBoard() {
         boardState = Array(8).fill().map(() => Array(8).fill(null));
         for(let r=0; r<8; r++) {
@@ -191,132 +159,97 @@
                 b.appendChild(cell);
             }
         }
-        
-        const statusEl = document.getElementById('game-status');
-        if(turn === myColor) {
-            statusEl.innerText = "SIZNING NAVBATINGIZ";
-            statusEl.style.color = "var(--accent)";
+        document.getElementById('game-status').innerText = turn === myColor ? "SIZNING NAVBATINGIZ" : "RAQIBNAVBT...";
+        if(isBot && turn !== myColor) setTimeout(botBrain, 800);
+    }
+
+    // BOT LOGIKASI (OSON VA PRO)
+    function botBrain() {
+        let caps = getCaptures('red');
+        if(caps.length > 0) {
+            // Urish har doim majburiy (har qanday darajada)
+            const cap = caps[0];
+            executeMove(cap.from, cap.to, true);
         } else {
-            statusEl.innerText = "RAQIB YURISHINI KUTING...";
-            statusEl.style.color = "#ff4757";
-            if(isBot) setTimeout(botMove, 1000);
+            let moves = getAllMoves('red');
+            if(moves.length === 0) { alert("G'ALABA! +50 XP"); winGame(50); return; }
+            
+            let chosen;
+            if(botLevel === 'pro') {
+                // PRO BOT: Oldinga borishni va damka bo'lishni afzal ko'radi
+                chosen = moves.sort((a,b) => b.to.r - a.to.r)[0];
+            } else {
+                // OSON BOT: Tasodifiy yurish
+                chosen = moves[Math.floor(Math.random()*moves.length)];
+            }
+            executeMove(chosen.from, chosen.to, false);
         }
     }
 
-    // URISH LOGIKASI (MULTI-JUMP)
-    function getCaptures(color, specificPiece = null) {
-        let captures = [];
-        let pieces = [];
-        if(specificPiece) {
-            pieces.push(specificPiece);
-        } else {
-            for(let r=0; r<8; r++) {
-                for(let c=0; c<8; c++) {
-                    if(boardState[r][c]?.color === color) pieces.push({r, c});
+    function executeMove(from, to, wasCapture) {
+        const p = boardState[from.r][from.c];
+        if(wasCapture) {
+            const mr = (from.r + to.r) / 2;
+            const mc = (from.c + to.c) / 2;
+            boardState[mr][mc] = null;
+        }
+        boardState[to.r][to.c] = p;
+        boardState[from.r][from.c] = null;
+        if((to.r===0 && p.color==='white') || (to.r===7 && p.color==='red')) p.damka = true;
+
+        turn = turn === 'white' ? 'red' : 'white';
+        render();
+    }
+
+    function winGame(points) {
+        userData.xp += points;
+        updateProfileUI();
+        location.reload();
+    }
+
+    // YORDAMCHI FUNKSIYALAR (QISQA)
+    function getCaptures(color) {
+        let caps = [];
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                if(boardState[r][c]?.color === color) {
+                    [[2,2],[2,-2],[-2,2],[-2,-2]].forEach(([dr, dc]) => {
+                        let nr=r+dr, nc=c+dc, mr=r+dr/2, mc=c+dc/2;
+                        if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== color) 
+                            caps.push({from:{r,c}, to:{r:nr, c:nc}});
+                    });
                 }
             }
         }
+        return caps;
+    }
 
-        pieces.forEach(({r, c}) => {
-            const p = boardState[r][c];
-            // Oddiy tosh va Damka uchun yo'nalishlar
-            const directions = [[2,2],[2,-2],[-2,2],[-2,-2]];
-            directions.forEach(([dr, dc]) => {
-                const nr = r+dr, nc = c+dc, mr = r+dr/2, mc = c+dc/2;
-                if(nr>=0 && nr<8 && nc>=0 && nc<8) {
-                    if(!boardState[nr][nc] && boardState[mr][mc] && boardState[mr][mc].color !== color) {
-                        captures.push({from: {r,c}, to: {r:nr, c:nc}, mid: {r:mr, c:mc}});
-                    }
+    function getAllMoves(color) {
+        let moves = [];
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                if(boardState[r][c]?.color === color) {
+                    let dirs = boardState[r][c].damka ? [[1,1],[1,-1],[-1,1],[-1,-1]] : (color==='red' ? [[1,1],[1,-1]] : [[-1,1],[-1,-1]]);
+                    dirs.forEach(([dr, dc]) => {
+                        let nr=r+dr, nc=c+dc;
+                        if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc]) moves.push({from:{r,c}, to:{r:nr, c:nc}});
+                    });
                 }
-            });
-        });
-        return captures;
+            }
+        }
+        return moves;
     }
 
     function handleMove(r, c) {
         if(turn !== myColor) return;
         const p = boardState[r][c];
-        const allCaptures = getCaptures(myColor);
-        const pieceCaptures = getCaptures(myColor, isMultiJump ? selected : null);
-
-        // Toshni tanlash
-        if(p && p.color === myColor && !isMultiJump) {
-            if(allCaptures.length > 0 && !getCaptures(myColor, {r, c}).length) {
-                alert("Majburiy urish bor!"); return;
-            }
-            selected = {r, c}; render(); return;
-        }
-
-        // Harakat qilish
+        if(p?.color === myColor) { selected = {r, c}; render(); return; }
         if(selected) {
-            const cap = pieceCaptures.find(x => x.to.r === r && x.to.c === c);
-            if(cap) {
-                boardState[cap.mid.r][cap.mid.c] = null; // Raqib toshini olib tashlash
-                movePiece(selected, {r, c}, true);
-            } else if(!isMultiJump && allCaptures.length === 0) {
-                const dr = r - selected.r, dc = c - selected.c;
-                const pObj = boardState[selected.r][selected.c];
-                if(Math.abs(dr) === 1 && Math.abs(dc) === 1) {
-                    // Oddiy yurish (faqat oldinga yoki damka hamma yoqqa)
-                    if(pObj.damka || (myColor==='white' && dr===-1) || (myColor==='red' && dr===1)) {
-                        movePiece(selected, {r, c}, false);
-                    }
-                }
-            }
-        }
-    }
-
-    function movePiece(from, to, wasCapture) {
-        const p = boardState[from.r][from.c];
-        boardState[to.r][to.c] = p;
-        boardState[from.r][from.c] = null;
-        
-        // Damka bo'lish
-        if((to.r===0 && p.color==='white') || (to.r===7 && p.color==='red')) p.damka = true;
-
-        // Ketma-ket urishni tekshirish
-        if(wasCapture && getCaptures(p.color, {r: to.r, c: to.c}).length > 0) {
-            isMultiJump = true;
-            selected = {r: to.r, c: to.c};
-        } else {
-            isMultiJump = false;
-            selected = null;
-            turn = turn === 'white' ? 'red' : 'white';
-        }
-        
-        if(!isBot && socket) socket.emit('make-move', { roomId, board: boardState, nextTurn: turn });
-        render();
-    }
-
-    // BOTNI AQLLI QILISH (URISH MAJBURIYATI BILAN)
-    function botMove() {
-        if(turn === myColor) return;
-        
-        let caps = getCaptures('red', isMultiJump ? selected : null);
-        if(caps.length > 0) {
-            // Urish majburiy
-            const c = caps[Math.floor(Math.random() * caps.length)];
-            boardState[c.mid.r][c.mid.c] = null;
-            movePiece(c.from, c.to, true);
-        } else {
-            // Oddiy yurish
-            let moves = [];
-            for(let r=0; r<8; r++){
-                for(let c=0; c<8; c++){
-                    const p = boardState[r][c];
-                    if(p?.color === 'red') {
-                        const dirs = p.damka ? [[1,1],[1,-1],[-1,1],[-1,-1]] : [[1,1],[1,-1]];
-                        dirs.forEach(([dr, dc]) => {
-                            const nr=r+dr, nc=c+dc;
-                            if(nr>=0 && nr<8 && nc>=0 && nc<8 && !boardState[nr][nc]) moves.push({from:{r,c}, to:{r:nr, c:nc}});
-                        });
-                    }
-                }
-            }
-            if(moves.length > 0) {
-                const m = moves[Math.floor(Math.random()*moves.length)];
-                movePiece(m.from, m.to, false);
-            }
+            // Oddiy harakat va urishni tekshirish (Yuqoridagi executeMove ga o'xshash)
+            let dr = r - selected.r, dc = c - selected.c;
+            if(Math.abs(dr) === 2 && Math.abs(dc) === 2) executeMove(selected, {r,c}, true);
+            else if(Math.abs(dr) === 1 && Math.abs(dc) === 1) executeMove(selected, {r,c}, false);
+            selected = null; render();
         }
     }
 </script>
